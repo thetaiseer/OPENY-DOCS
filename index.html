@@ -212,14 +212,32 @@
         .ui-nav-pill:hover:not(.active) { color: var(--text-main); }
         .system-logo { height: 28px; width: auto; object-fit: contain; }
 
-        .app-wrapper { display: flex; flex-direction: column; height: calc(100vh - 64px); }
-        @media (min-width: 768px) { .app-wrapper { flex-direction: row; } }
+        /* Desktop: side-by-side fixed-height layout */
+        .app-wrapper { display: flex; flex-direction: column; height: auto; min-height: calc(100vh - 64px); }
+        @media (min-width: 1024px) { .app-wrapper { flex-direction: row; height: calc(100vh - 64px); } }
         
         .app-sidebar { width: 100%; border-right: 1px solid rgba(255, 255, 255, 0.5); background-color: rgba(248, 250, 252, 0.2); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: flex; flex-direction: column; }
-        @media (min-width: 768px) { .app-sidebar { width: 45%; max-width: 520px; } }
+        @media (min-width: 1024px) { .app-sidebar { width: 45%; max-width: 520px; } }
         
         .app-editor { flex: 1; overflow-y: auto; padding: 1.5rem; }
-        .app-preview { flex: 1; overflow-y: auto; background-color: transparent; padding: 2rem; display: flex; justify-content: center; align-items: flex-start; position: relative;}
+        /* Desktop: scrollable preview panel */
+        .app-preview { flex: 1; overflow-y: auto; background-color: transparent; padding: 2rem; display: flex; justify-content: center; align-items: flex-start; position: relative; }
+        
+        /* Mobile & Tablet: full-width stacked preview, no clipping */
+        @media (max-width: 1023px) {
+            .app-wrapper { overflow: visible; }
+            .app-sidebar { overflow: visible; height: auto; }
+            .app-editor { overflow: visible; height: auto; }
+            .app-preview {
+                overflow: visible;
+                height: auto;
+                min-height: 0;
+                width: 100%;
+                padding: 1.5rem 1rem 2rem;
+                display: block;
+                position: static;
+            }
+        }
         
         .ui-sub-tabs { display: flex; justify-content: center; gap: 0.5rem; padding-bottom: 1.5rem; }
         .tab-content { display: none; }
@@ -227,6 +245,9 @@
         
         .export-dock { position: sticky; bottom: 0; background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid rgba(255, 255, 255, 0.6); padding: 1rem 1.5rem; margin-top: auto; }
 
+        @media (max-width: 1023px) {
+            .export-dock { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(24px); position: static; }
+            .a4-page { box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         @media (max-width: 768px) {
             .export-dock { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(24px); padding: 0.625rem 1rem; flex-direction: row; flex-wrap: nowrap; }
             .a4-page { box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
@@ -2179,22 +2200,31 @@
         };
 
         window.adjustScreenScale = function() {
+            const isMobile = window.innerWidth < 1024;
             const containers = document.querySelectorAll('.app-preview');
             containers.forEach(container => {
                 if (container.offsetWidth === 0) return;
                 const pdfWrapper = container.querySelector('.a4-page');
                 if(!container || !pdfWrapper) return;
                 
-                const paddingX = window.innerWidth < 768 ? 32 : 64;
+                const paddingX = isMobile ? 32 : 64;
                 const availableWidth = container.offsetWidth - paddingX;
                 const scale = Math.min(availableWidth / 794, 1);
                 
                 pdfWrapper.style.transform = `scale(${scale})`;
                 pdfWrapper.style.transformOrigin = 'top center';
                 
+                // On mobile/tablet the container is auto-height (overflow: visible),
+                // so collapse the extra layout space from scaling to avoid blank gaps.
+                // On desktop the container scrolls, same collapse is needed.
                 const heightDiff = pdfWrapper.offsetHeight * (1 - scale);
                 pdfWrapper.style.marginBottom = `-${heightDiff}px`;
-                container.style.height = 'auto';
+                // On mobile ensure the container height is not artificially constrained.
+                if (isMobile) {
+                    container.style.height = 'auto';
+                    container.style.minHeight = '0';
+                    container.style.overflow = 'visible';
+                }
 
                 // Also apply the same scale to any extra pages (paged contract preview)
                 container.querySelectorAll('.extra-preview-page').forEach(function(extraPage) {
