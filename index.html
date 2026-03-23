@@ -1239,6 +1239,13 @@
                                     <option value="USD">USD — US Dollar</option>
                                 </select>
                             </div>
+                            <div class="ui-form-group mb-0 col-span-2">
+                                <label class="ui-label">Contract Language — لغة العقد</label>
+                                <select id="ct-lang" class="ui-input" onchange="window.setContractLang('contract', this.value)">
+                                    <option value="ar">🇸🇦 Arabic — عربي</option>
+                                    <option value="en">🇬🇧 English</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -1516,6 +1523,13 @@
                                     <option value="SAR">SAR — Saudi Riyal</option>
                                     <option value="AED">AED — UAE Dirham</option>
                                     <option value="USD">USD — US Dollar</option>
+                                </select>
+                            </div>
+                            <div class="ui-form-group mb-0 col-span-2">
+                                <label class="ui-label">Contract Language — لغة العقد</label>
+                                <select id="ec-lang" class="ui-input" onchange="window.setContractLang('empcontract', this.value)">
+                                    <option value="ar">🇸🇦 Arabic — عربي</option>
+                                    <option value="en">🇬🇧 English</option>
                                 </select>
                             </div>
                         </div>
@@ -4156,17 +4170,168 @@
         let ctClauses = [];
         let ecClauses = [];
         let ctRenderTimeout, ecRenderTimeout;
+        let contractLang = 'ar';
+        let empContractLang = 'ar';
 
-        function getDefaultContractServices() {
+        // ==========================================================================
+        // CONTRACT CONTENT TRANSLATIONS (Arabic / English)
+        // ==========================================================================
+        const CONTRACT_CONTENT = {
+            ar: {
+                clientContractTitle: 'عقد خدمات تسويق رقمي',
+                clientContractSubtitle: 'Digital Marketing Services Agreement',
+                empContractTitle: 'عقد توظيف',
+                empContractSubtitle: 'Employment Contract',
+                contractLabel: 'عقد',
+                employmentContractLabel: 'عقد توظيف',
+                noLabel: 'رقم:',
+                dateLabel: 'التاريخ:',
+                durationLabel: 'المدة:',
+                monthsLabel: 'شهراً',
+                party1Provider: 'الطرف الأول — مقدم الخدمة',
+                party2Client: 'الطرف الثاني — العميل',
+                employer: 'صاحب العمل',
+                employee: 'الموظف',
+                repLabel: 'المندوب:',
+                taxLabel: 'السجل الضريبي:',
+                idLabel: 'رقم الهوية:',
+                nationalityLabel: 'الجنسية:',
+                maritalLabel: 'الحالة الاجتماعية:',
+                includedServices: 'الخدمات المشمولة',
+                financialDetails: 'التفاصيل المالية',
+                paymentMethod: 'طريقة الدفع',
+                paymentTerms: 'شروط الدفع',
+                notesLabel: 'ملاحظات',
+                totalContractValue: 'إجمالي قيمة العقد',
+                termsConditions: 'الشروط والأحكام',
+                sigParty1: 'الطرف الأول',
+                sigParty2: 'الطرف الثاني',
+                authorizedRep: 'الممثل المفوض',
+                companyRep: 'ممثل الشركة',
+                clientNameDefault: 'اسم العميل',
+                employeeNameDefault: 'اسم الموظف',
+                sigDate: 'التاريخ:',
+                sigPlace: 'المكان:',
+                jobDetails: 'تفاصيل الوظيفة',
+                jobTitle: 'المسمى الوظيفي',
+                department: 'القسم',
+                directManager: 'المدير المباشر',
+                employmentType: 'نوع التوظيف',
+                startDate: 'تاريخ البدء',
+                duration: 'المدة',
+                probation: 'فترة التجربة',
+                workplace: 'مكان العمل',
+                compensation: 'الراتب والمزايا',
+                paymentDate: 'تاريخ الدفع',
+                dailyHours: 'ساعات العمل اليومية',
+                workDays: 'أيام العمل',
+                annualLeave: 'الإجازة السنوية',
+                benefits: 'المزايا',
+                basicMonthlySalary: 'الراتب الشهري الأساسي',
+                hrsPerDay: 'ساعة/يوم',
+                defaultCompanyName: 'OPENY',
+                clauseTitlePlaceholder: 'عنوان البند (عربي)',
+                clauseTextPlaceholder: 'نص البند (عربي)...',
+            },
+            en: {
+                clientContractTitle: 'Digital Marketing Services Agreement',
+                clientContractSubtitle: 'عقد خدمات تسويق رقمي',
+                empContractTitle: 'Employment Contract',
+                empContractSubtitle: 'عقد توظيف',
+                contractLabel: 'CONTRACT',
+                employmentContractLabel: 'EMPLOYMENT CONTRACT',
+                noLabel: 'NO:',
+                dateLabel: 'DATE:',
+                durationLabel: 'DURATION:',
+                monthsLabel: 'Months',
+                party1Provider: 'PARTY 1 — SERVICE PROVIDER',
+                party2Client: 'PARTY 2 — CLIENT',
+                employer: 'EMPLOYER',
+                employee: 'EMPLOYEE',
+                repLabel: 'Rep:',
+                taxLabel: 'Tax Reg:',
+                idLabel: 'ID:',
+                nationalityLabel: 'Nationality:',
+                maritalLabel: 'Status:',
+                includedServices: 'INCLUDED SERVICES',
+                financialDetails: 'FINANCIAL DETAILS',
+                paymentMethod: 'Payment Method',
+                paymentTerms: 'Payment Terms',
+                notesLabel: 'Notes',
+                totalContractValue: 'TOTAL CONTRACT VALUE',
+                termsConditions: 'TERMS & CONDITIONS',
+                sigParty1: 'Party 1',
+                sigParty2: 'Party 2',
+                authorizedRep: 'Authorized Representative',
+                companyRep: 'Company Representative',
+                clientNameDefault: 'Client Name',
+                employeeNameDefault: 'Employee Name',
+                sigDate: 'Date:',
+                sigPlace: 'Place:',
+                jobDetails: 'JOB DETAILS',
+                jobTitle: 'Job Title',
+                department: 'Department',
+                directManager: 'Direct Manager',
+                employmentType: 'Employment Type',
+                startDate: 'Start Date',
+                duration: 'Duration',
+                probation: 'Probation Period',
+                workplace: 'Workplace',
+                compensation: 'COMPENSATION',
+                paymentDate: 'Payment Date',
+                dailyHours: 'Daily Hours',
+                workDays: 'Work Days',
+                annualLeave: 'Annual Leave',
+                benefits: 'Benefits',
+                basicMonthlySalary: 'BASIC MONTHLY SALARY',
+                hrsPerDay: 'hrs/day',
+                defaultCompanyName: 'OPENY',
+                clauseTitlePlaceholder: 'Clause title (English)',
+                clauseTextPlaceholder: 'Clause text (English)...',
+            }
+        };
+
+        function getDefaultContractServices(lang) {
+            if (lang === 'en') {
+                return [
+                    'Paid Advertising', 'Media Buying & Planning', 'Marketing Consulting',
+                    'Graphic Design', 'Motion Graphics', 'Media Production',
+                    'Content Creation', 'Digital Branding', 'Analytics & Reporting',
+                    'Social Media Management'
+                ];
+            }
             return [
-                'Paid Advertising', 'Media Buying & Planning', 'Marketing Consulting',
-                'Graphic Design', 'Motion Graphics', 'Media Production',
-                'Content Creation', 'Digital Branding', 'Analytics & Reporting',
-                'Social Media Management'
+                'الإعلانات المدفوعة', 'الشراء الإعلامي والتخطيط', 'استشارات التسويق',
+                'التصميم الجرافيكي', 'الموشن جرافيك', 'الإنتاج الإعلامي',
+                'إنشاء المحتوى', 'العلامة التجارية الرقمية', 'التحليلات والتقارير',
+                'إدارة وسائل التواصل الاجتماعي'
             ];
         }
 
-        function getDefaultClientClauses() {
+        function getDefaultClientClauses(lang) {
+            if (lang === 'en') {
+                return [
+                    { id: _cid(), title: 'Preamble', text: 'Both parties have agreed to enter into this contract with the terms and conditions set forth below, in consideration of their mutual desire for productive collaboration and achievement of shared objectives, effective from the date of signing.' },
+                    { id: _cid(), title: 'Contract Subject', text: 'Party 1 (Service Provider) undertakes to provide integrated digital marketing services to Party 2 (Client), including the services specified in this contract, in accordance with the agreed-upon specifications, standards, and required quality level.' },
+                    { id: _cid(), title: 'Scope of Work', text: 'Party 1 shall provide the digital marketing services covered by this contract, including planning, execution, and supervision of all agreed digital marketing activities, in accordance with the work plan approved by both parties.' },
+                    { id: _cid(), title: 'Contract Duration', text: 'This contract shall be in effect from the date of signing for the period specified in the contract data. Should either party wish to terminate or renew the contract, they must provide written notice to the other party at least thirty (30) working days prior to the contract expiry date.' },
+                    { id: _cid(), title: 'Financial Consideration', text: 'In consideration of the services rendered, Party 2 undertakes to pay the total contract value specified in the financial details of this contract, inclusive of all agreed-upon services.' },
+                    { id: _cid(), title: 'Payment Mechanism', text: 'Payment shall be made in accordance with the payment method and terms specified in the financial details of this contract. Payments are due on their specified dates, and any delay in payment subjects Party 2 to the provisions of the late payment clause in this contract.' },
+                    { id: _cid(), title: 'Late Payment', text: 'In the event of delay in paying any installment on its due date, Party 1 shall have the right to suspend the provision of services until the outstanding amount is paid in full, while retaining the right to claim compensation for any damages arising from such delay.' },
+                    { id: _cid(), title: 'Party 1 Obligations', text: 'Party 1 undertakes to provide the agreed-upon services to the highest professional quality standards, maintain the confidentiality of Party 2\'s information, and provide periodic performance and results reports on schedule.' },
+                    { id: _cid(), title: 'Party 2 Obligations', text: 'Party 2 undertakes to provide Party 1 with all necessary information and materials for service execution in a timely manner, adhere to the agreed payment schedule, and refrain from engaging a third party to provide the same services covered by this contract during its term.' },
+                    { id: _cid(), title: 'Amendments', text: 'No amendment to the terms of this contract shall be made except with prior written consent from both parties. Agreed amendments shall constitute an official addendum to the contract and an integral part thereof.' },
+                    { id: _cid(), title: 'Additional Works', text: 'Any works or services requested by Party 2 that exceed the scope defined in this contract shall be considered additional works, requiring a separate agreement addendum specifying the nature of such works and the additional cost incurred.' },
+                    { id: _cid(), title: 'Intellectual Property', text: 'Ownership of all creative materials and content produced within the scope of this contract shall transfer to Party 2 upon full payment of the contract value. Party 1 retains the right to reference these works in its professional portfolio unless otherwise agreed in writing.' },
+                    { id: _cid(), title: 'Confidentiality and Non-Disclosure', text: 'Both parties undertake to maintain the confidentiality of all commercial and strategic information exchanged in the course of executing this contract, and not to disclose it to any third party without prior written consent. This obligation shall remain in effect for three (3) years after the contract\'s termination.' },
+                    { id: _cid(), title: 'Limitation of Liability', text: 'Party 1 shall not be held liable for any indirect losses or damages resulting from circumstances beyond its control. Party 1\'s liability is limited to the value of services actually rendered in the event of proven breach of its contractual obligations.' },
+                    { id: _cid(), title: 'Contract Termination', text: 'Either party shall have the right to terminate this contract before its expiry in the event of a material breach by the other party that remains uncured within fifteen (15) working days of written notice. In the event of early termination by Party 2 without valid justification, Party 1 shall be entitled to compensation equal to three months of the contract value.' },
+                    { id: _cid(), title: 'Force Majeure', text: 'Neither party shall be deemed in breach of its contractual obligations if such breach results from circumstances beyond its control, such as natural disasters, epidemics, wars, or government decisions. The affected party must immediately notify the other party.' },
+                    { id: _cid(), title: 'Notices and Communications', text: 'All formal notices and communications between the parties shall be made in writing to the email addresses or postal addresses specified in this contract and shall be deemed received within (48) hours of dispatch.' },
+                    { id: _cid(), title: 'Applicable Law', text: 'This contract shall be governed by the laws in force in the Arab Republic of Egypt. In the event of any dispute relating to the interpretation or execution of this contract, the parties shall first seek amicable settlement; failing that, recourse shall be made to the competent courts in Egypt.' },
+                    { id: _cid(), title: 'Acknowledgment', text: 'Both parties acknowledge that they have read and understood all the terms and conditions of this contract, and that they are signing it voluntarily without any coercion or pressure, and that the representative of each party is legally authorized to sign on its behalf.' }
+                ];
+            }
             return [
                 { id: _cid(), title: 'التمهيد', text: 'بناءً على رغبة الطرفين في التعاون المثمر وتحقيق المصالح المشتركة، فقد اتفق الطرف الأول (الشركة) والطرف الثاني (العميل) على إبرام هذا العقد بالشروط والأحكام الواردة أدناه، وذلك اعتباراً من تاريخ التوقيع عليه.' },
                 { id: _cid(), title: 'موضوع العقد', text: 'يتعهد الطرف الأول بتقديم خدمات التسويق الرقمي المتكاملة للطرف الثاني، وتشمل هذه الخدمات الخدمات المنصوص عليها في هذا العقد، وذلك وفقاً للمواصفات والمعايير المتفق عليها ومستوى الجودة المطلوب.' },
@@ -4190,7 +4355,24 @@
             ];
         }
 
-        function getDefaultEmpClauses() {
+        function getDefaultEmpClauses(lang) {
+            if (lang === 'en') {
+                return [
+                    { id: _cid(), title: 'Appointment', text: 'The employee is appointed to the position specified in the contract data effective from the start date stipulated therein, subject to the terms and conditions set out in this contract and the company\'s applicable internal regulations.' },
+                    { id: _cid(), title: 'Probation Period', text: 'The employee shall be subject to a probation period as specified in the contract data. During this period, either party has the right to terminate the employment contract with a two-week (14 days) prior written notice, without the need for justification.' },
+                    { id: _cid(), title: 'Salary', text: 'The employee shall receive a gross monthly salary as specified in the employment details. This salary shall be reviewed annually in accordance with performance evaluation and company policies. This salary represents full compensation for all regular working hours.' },
+                    { id: _cid(), title: 'Working Hours', text: 'Regular working hours shall be as specified in this contract. The employee may occasionally be required to work overtime in accordance with business needs, in coordination with their direct manager and in accordance with approved policies.' },
+                    { id: _cid(), title: 'Annual Leave', text: 'The employee shall be entitled to the leave specified in this contract in accordance with the company\'s approved policy. Leave must be requested in advance and approved by the direct manager based on business needs.' },
+                    { id: _cid(), title: 'Confidentiality', text: 'The employee undertakes to maintain the confidentiality of all commercial, financial, and operational information accessed by virtue of their employment, and not to disclose it to any external party. This obligation shall continue for three (3) years after termination of employment.' },
+                    { id: _cid(), title: 'Non-Competition', text: 'The employee undertakes, during their employment and for a period of one full year after the termination of their contract, not to work for or provide consulting services to any direct competitor, and not to establish a business that competes with the company\'s main activity.' },
+                    { id: _cid(), title: 'Professional Conduct', text: 'The employee undertakes to maintain professional discipline, adhere to working hours and professional conduct standards, respect colleagues and clients, protect the company\'s reputation, and implement approved policies and procedures at all times.' },
+                    { id: _cid(), title: 'Disciplinary Penalties', text: 'In the event of the employee violating internal regulations and rules, disciplinary sanctions shall be applied in accordance with the company\'s policy, ranging from written warning to termination of service depending on the severity of the violation.' },
+                    { id: _cid(), title: 'Contract Termination', text: 'Either party shall have the right to terminate this contract with prior written notice as stipulated. The company has the right to immediate termination in cases of gross misconduct or behavior contrary to professional ethics without the need for a notice period.' },
+                    { id: _cid(), title: 'End-of-Service Benefits', text: 'Upon termination of the employee\'s service, their final entitlements shall be calculated in accordance with applicable law and company policy, including any accrued leave and agreed bonuses, after settling any mutual financial obligations.' },
+                    { id: _cid(), title: 'Notice Period', text: 'Both parties undertake to provide prior written notice for the period agreed upon in the event either party wishes to terminate the contract. If the notice period is not observed, the aggrieved party has the right to claim appropriate financial compensation.' },
+                    { id: _cid(), title: 'Governing Law', text: 'This contract shall be governed by labor law and applicable laws in the Arab Republic of Egypt. In the event of any dispute, the parties shall seek to resolve it amicably first, then through the competent legal channels.' }
+                ];
+            }
             return [
                 { id: _cid(), title: 'التعيين', text: 'يُعيَّن الموظف في الوظيفة المحددة في بيانات العقد ابتداءً من تاريخ بدء العمل المنصوص عليه، وذلك خاضعاً للشروط والأحكام الواردة في هذا العقد ولوائح الشركة الداخلية المعمول بها.' },
                 { id: _cid(), title: 'فترة التجربة', text: 'تسري على الموظف فترة اختبار محددة في بيانات العقد، وخلال هذه الفترة يحق لأي من الطرفين إنهاء عقد العمل بإشعار كتابي مسبق مدته أسبوعان (14) يوماً، دون الحاجة إلى تبرير.' },
@@ -4268,39 +4450,49 @@
         }
 
         // --- Contract: Clauses ---
-        function _renderClauseRow(prefix, clause, container) {
+        function _renderClauseRow(prefix, clause, container, lang) {
+            const isArabic = (lang || contractLang) !== 'en';
+            const C = CONTRACT_CONTENT[isArabic ? 'ar' : 'en'];
+            const clauseDir = isArabic ? 'rtl' : 'ltr';
+            const clauseAlign = isArabic ? 'right' : 'left';
+            const clauseFont = isArabic ? "'Amiri','Tajawal',sans-serif" : 'inherit';
             const row = document.createElement('div');
             row.className = 'ct-clause-editor-row';
             row.id = 'row-' + clause.id;
             row.dataset.clauseId = clause.id;
             row.innerHTML = `
                 <div class="flex justify-between items-center mb-2">
-                    <input type="text" class="ui-input !py-1.5 !text-sm font-bold flex-1 mr-2" placeholder="Clause title (Arabic)" value="${clause.title || ''}" dir="rtl" style="text-align:right;" oninput="window.debouncedRenderContract()">
+                    <input type="text" class="ui-input !py-1.5 !text-sm font-bold flex-1 mr-2" placeholder="${C.clauseTitlePlaceholder}" value="${clause.title || ''}" dir="${clauseDir}" style="text-align:${clauseAlign};" oninput="window.debouncedRenderContract()">
                     <div class="flex gap-1 shrink-0">
                         <button class="ui-button-ghost !py-1 !px-2 text-xs" title="Move Up" onclick="(function(el){const prev=el.previousElementSibling;if(prev)el.parentNode.insertBefore(el,prev);})(document.getElementById('row-${clause.id}')); window.debouncedRenderContract();">↑</button>
                         <button class="ui-button-ghost !py-1 !px-2 text-xs" title="Move Down" onclick="(function(el){const next=el.nextElementSibling;if(next)next.parentNode.insertBefore(next,el);})(document.getElementById('row-${clause.id}')); window.debouncedRenderContract();">↓</button>
                         <button class="ui-button-ghost !py-1 !px-2 text-xs !text-red-500 hover:!bg-red-50" title="Delete" onclick="document.getElementById('row-${clause.id}').remove(); window.debouncedRenderContract();">✕</button>
                     </div>
                 </div>
-                <textarea class="ui-input text-sm resize-y w-full" rows="3" dir="rtl" style="text-align:right;font-family:'Amiri','Tajawal',sans-serif;" placeholder="Clause text (Arabic)..." oninput="window.debouncedRenderContract()">${clause.text || ''}</textarea>`;
+                <textarea class="ui-input text-sm resize-y w-full" rows="3" dir="${clauseDir}" style="text-align:${clauseAlign};font-family:${clauseFont};" placeholder="${C.clauseTextPlaceholder}" oninput="window.debouncedRenderContract()">${clause.text || ''}</textarea>`;
             container.appendChild(row);
         }
 
-        function _renderEmpClauseRow(clause, container) {
+        function _renderEmpClauseRow(clause, container, lang) {
+            const isArabic = (lang || empContractLang) !== 'en';
+            const C = CONTRACT_CONTENT[isArabic ? 'ar' : 'en'];
+            const clauseDir = isArabic ? 'rtl' : 'ltr';
+            const clauseAlign = isArabic ? 'right' : 'left';
+            const clauseFont = isArabic ? "'Amiri','Tajawal',sans-serif" : 'inherit';
             const row = document.createElement('div');
             row.className = 'ct-clause-editor-row';
             row.id = 'erow-' + clause.id;
             row.dataset.clauseId = clause.id;
             row.innerHTML = `
                 <div class="flex justify-between items-center mb-2">
-                    <input type="text" class="ui-input !py-1.5 !text-sm font-bold flex-1 mr-2" placeholder="Clause title (Arabic)" value="${clause.title || ''}" dir="rtl" style="text-align:right;" oninput="window.debouncedRenderEmpContract()">
+                    <input type="text" class="ui-input !py-1.5 !text-sm font-bold flex-1 mr-2" placeholder="${C.clauseTitlePlaceholder}" value="${clause.title || ''}" dir="${clauseDir}" style="text-align:${clauseAlign};" oninput="window.debouncedRenderEmpContract()">
                     <div class="flex gap-1 shrink-0">
                         <button class="ui-button-ghost !py-1 !px-2 text-xs" title="Move Up" onclick="(function(el){const prev=el.previousElementSibling;if(prev)el.parentNode.insertBefore(el,prev);})(document.getElementById('erow-${clause.id}')); window.debouncedRenderEmpContract();">↑</button>
                         <button class="ui-button-ghost !py-1 !px-2 text-xs" title="Move Down" onclick="(function(el){const next=el.nextElementSibling;if(next)next.parentNode.insertBefore(next,el);})(document.getElementById('erow-${clause.id}')); window.debouncedRenderEmpContract();">↓</button>
                         <button class="ui-button-ghost !py-1 !px-2 text-xs !text-red-500 hover:!bg-red-50" title="Delete" onclick="document.getElementById('erow-${clause.id}').remove(); window.debouncedRenderEmpContract();">✕</button>
                     </div>
                 </div>
-                <textarea class="ui-input text-sm resize-y w-full" rows="3" dir="rtl" style="text-align:right;font-family:'Amiri','Tajawal',sans-serif;" placeholder="Clause text (Arabic)..." oninput="window.debouncedRenderEmpContract()">${clause.text || ''}</textarea>`;
+                <textarea class="ui-input text-sm resize-y w-full" rows="3" dir="${clauseDir}" style="text-align:${clauseAlign};font-family:${clauseFont};" placeholder="${C.clauseTextPlaceholder}" oninput="window.debouncedRenderEmpContract()">${clause.text || ''}</textarea>`;
             container.appendChild(row);
         }
 
@@ -4338,12 +4530,53 @@
             ecRenderTimeout = setTimeout(() => window.renderEmpContractPreview(), debounceDelay);
         };
 
+        // --- Contract Language Switcher ---
+        window.setContractLang = function(type, lang) {
+            const isEmp = type === 'empcontract';
+            if (isEmp) {
+                empContractLang = lang;
+                // Reload default clauses in the selected language
+                const ecClContainer = document.getElementById('ec-clauses-container');
+                if (ecClContainer) {
+                    ecClContainer.innerHTML = '';
+                    getDefaultEmpClauses(lang).forEach(cl => _renderEmpClauseRow(cl, ecClContainer, lang));
+                    const ec = document.getElementById('ec-clauses-count');
+                    if (ec) ec.textContent = getDefaultEmpClauses(lang).length;
+                }
+                window.renderEmpContractPreview();
+            } else {
+                contractLang = lang;
+                // Reload default services in the selected language
+                const ctSvcContainer = document.getElementById('ct-services-container');
+                if (ctSvcContainer) {
+                    ctSvcContainer.innerHTML = '';
+                    getDefaultContractServices(lang).forEach(s => window.addContractService(s));
+                }
+                // Reload default clauses in the selected language
+                const ctClContainer = document.getElementById('ct-clauses-container');
+                if (ctClContainer) {
+                    ctClContainer.innerHTML = '';
+                    getDefaultClientClauses(lang).forEach(cl => _renderClauseRow('ct', cl, ctClContainer, lang));
+                    const cc = document.getElementById('ct-clauses-count');
+                    if (cc) cc.textContent = getDefaultClientClauses(lang).length;
+                }
+                window.renderContractPreview();
+            }
+        };
+
         // --- Contract Preview Render ---
         window.renderContractPreview = function() {
             const content = document.getElementById('contractPageContent');
             if (!content) return;
 
             const v = id => document.getElementById(id)?.value || '';
+            const lang = document.getElementById('ct-lang')?.value || contractLang;
+            const C = CONTRACT_CONTENT[lang] || CONTRACT_CONTENT['ar'];
+            const isArabic = lang === 'ar';
+            const dir = isArabic ? 'rtl' : 'ltr';
+            const fontFamily = isArabic ? "'Amiri','Tajawal',sans-serif" : "'Inter',sans-serif";
+            const alignStyle = isArabic ? 'right' : 'left';
+
             const currency = v('ct-currency') || 'EGP';
             const totalVal = parseFloat(v('ct-total-value')) || 0;
             const services = _readCtServices();
@@ -4353,54 +4586,60 @@
             const clauseCountEl = document.getElementById('ct-clauses-count');
             if (clauseCountEl) clauseCountEl.textContent = clauses.length;
 
-            const formatDate = formatContractDate;
+            const fmtDate = (d) => {
+                if (!d) return '___________';
+                try {
+                    const locale = isArabic ? 'ar-EG' : 'en-GB';
+                    return new Date(d + 'T12:00:00').toLocaleDateString(locale, { day:'2-digit', month:'long', year:'numeric' });
+                } catch(e) { return d; }
+            };
 
-            let html = `<div style="font-family:'Inter',sans-serif;">
+            let html = `<div style="font-family:${fontFamily};direction:${dir};">
                 <!-- Header -->
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;${isArabic ? 'flex-direction:row-reverse;' : ''}">
                     <div>
                         <img src="https://i.postimg.cc/PJ0fwSNY/OPENY.png" crossorigin="anonymous" alt="OPENY" style="height:40px;width:auto;object-fit:contain;display:block;">
-                        <div style="font-size:10.5px;color:#6B7280;margin-top:6px;line-height:1.45;font-family:'Inter',sans-serif;">Villa 175, First District, Fifth Settlement, Cairo<br>info@openytalk.com</div>
+                        <div style="font-size:10.5px;color:#6B7280;margin-top:6px;line-height:1.45;font-family:'Inter',sans-serif;direction:ltr;">Villa 175, First District, Fifth Settlement, Cairo<br>info@openytalk.com</div>
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:28px;font-weight:900;letter-spacing:3px;color:#111;margin:0 0 6px 0;">CONTRACT</div>
-                        <div style="font-size:11px;color:#555;line-height:1.7;">
-                            <div><span style="font-weight:700;color:#111;">NO:</span> ${v('ct-num') || '___'}</div>
-                            <div><span style="font-weight:700;color:#111;">DATE:</span> ${formatDate(v('ct-date'))}</div>
-                            <div><span style="font-weight:700;color:#111;">DURATION:</span> ${v('ct-duration') || '___'} Months</div>
+                    <div style="text-align:${isArabic ? 'left' : 'right'};">
+                        <div style="font-size:28px;font-weight:900;letter-spacing:3px;color:#111;margin:0 0 6px 0;font-family:${fontFamily};">${C.contractLabel}</div>
+                        <div style="font-size:11px;color:#555;line-height:1.7;font-family:${fontFamily};text-align:${isArabic ? 'left' : 'right'};">
+                            <div><span style="font-weight:700;color:#111;">${C.noLabel}</span> ${v('ct-num') || '___'}</div>
+                            <div><span style="font-weight:700;color:#111;">${C.dateLabel}</span> ${fmtDate(v('ct-date'))}</div>
+                            <div><span style="font-weight:700;color:#111;">${C.durationLabel}</span> ${v('ct-duration') || '___'} ${C.monthsLabel}</div>
                         </div>
                     </div>
                 </div>
                 <div class="ct-header-divider"></div>
 
-                <!-- Title Band (Arabic) -->
+                <!-- Title Band -->
                 <div style="text-align:center;margin:12px 0;padding:10px;background:#111;color:#fff;">
-                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Amiri','Tajawal',sans-serif;direction:rtl;">عقد خدمات تسويق رقمي</div>
-                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Amiri','Tajawal',sans-serif;direction:rtl;">Digital Marketing Services Agreement</div>
+                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.clientContractTitle}</div>
+                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.clientContractSubtitle}</div>
                 </div>
 
                 <!-- Parties -->
                 <div class="ct-party-grid" style="margin:14px 0;">
                     <div class="ct-party-box">
-                        <div class="ct-party-header">PARTY 1 — SERVICE PROVIDER | الطرف الأول — مقدم الخدمة</div>
+                        <div class="ct-party-header">${C.party1Provider}</div>
                         <div class="ct-party-body">
-                            <div class="ct-party-name">${v('ct-p1-name') || 'OPENY'}</div>
-                            ${v('ct-p1-rep') ? `<div class="ct-party-detail">Rep: ${v('ct-p1-rep')}</div>` : ''}
-                            ${v('ct-p1-address') ? `<div class="ct-party-detail">${v('ct-p1-address')}</div>` : ''}
-                            ${v('ct-p1-email') ? `<div class="ct-party-detail">${v('ct-p1-email')}</div>` : ''}
-                            ${v('ct-p1-phone') ? `<div class="ct-party-detail">${v('ct-p1-phone')}</div>` : ''}
-                            ${v('ct-p1-tax') ? `<div class="ct-party-detail">Tax Reg: ${v('ct-p1-tax')}</div>` : ''}
+                            <div class="ct-party-name" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ct-p1-name') || C.defaultCompanyName}</div>
+                            ${v('ct-p1-rep') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.repLabel} ${v('ct-p1-rep')}</div>` : ''}
+                            ${v('ct-p1-address') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ct-p1-address')}</div>` : ''}
+                            ${v('ct-p1-email') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ct-p1-email')}</div>` : ''}
+                            ${v('ct-p1-phone') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ct-p1-phone')}</div>` : ''}
+                            ${v('ct-p1-tax') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.taxLabel} ${v('ct-p1-tax')}</div>` : ''}
                         </div>
                     </div>
                     <div class="ct-party-box">
-                        <div class="ct-party-header">PARTY 2 — CLIENT | الطرف الثاني — العميل</div>
+                        <div class="ct-party-header">${C.party2Client}</div>
                         <div class="ct-party-body">
-                            <div class="ct-party-name">${v('ct-p2-name') || 'Client Name'}</div>
-                            ${v('ct-p2-rep') ? `<div class="ct-party-detail">Rep: ${v('ct-p2-rep')}</div>` : ''}
-                            ${v('ct-p2-address') ? `<div class="ct-party-detail">${v('ct-p2-address')}</div>` : ''}
-                            ${v('ct-p2-email') ? `<div class="ct-party-detail">${v('ct-p2-email')}</div>` : ''}
-                            ${v('ct-p2-phone') ? `<div class="ct-party-detail">${v('ct-p2-phone')}</div>` : ''}
-                            ${v('ct-p2-tax') ? `<div class="ct-party-detail">Tax Reg: ${v('ct-p2-tax')}</div>` : ''}
+                            <div class="ct-party-name" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ct-p2-name') || C.clientNameDefault}</div>
+                            ${v('ct-p2-rep') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.repLabel} ${v('ct-p2-rep')}</div>` : ''}
+                            ${v('ct-p2-address') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ct-p2-address')}</div>` : ''}
+                            ${v('ct-p2-email') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ct-p2-email')}</div>` : ''}
+                            ${v('ct-p2-phone') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ct-p2-phone')}</div>` : ''}
+                            ${v('ct-p2-tax') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.taxLabel} ${v('ct-p2-tax')}</div>` : ''}
                         </div>
                     </div>
                 </div>
@@ -4408,19 +4647,19 @@
                 <!-- Included Services -->
                 ${services.length > 0 ? `
                 <div style="margin-bottom:14px;page-break-inside:avoid;">
-                    <div class="ct-section-label">INCLUDED SERVICES | الخدمات المشمولة</div>
-                    <ul class="ct-services-list">${services.map(s => `<li>${s}</li>`).join('')}</ul>
+                    <div class="ct-section-label">${C.includedServices}</div>
+                    <ul class="ct-services-list" style="direction:${dir};text-align:${alignStyle};font-family:${fontFamily};">${services.map(s => `<li>${s}</li>`).join('')}</ul>
                 </div>` : ''}
 
                 <!-- Financial Details -->
                 <div style="margin-bottom:14px;page-break-inside:avoid;">
-                    <div class="ct-section-label">FINANCIAL DETAILS | التفاصيل المالية</div>
-                    <div class="ct-financial-box">
-                        <div class="ct-financial-row"><span>Payment Method</span><span>${v('ct-payment-method') || '—'}</span></div>
-                        ${v('ct-payment-terms') ? `<div class="ct-financial-row"><span>Payment Terms</span><span>${v('ct-payment-terms')}</span></div>` : ''}
-                        ${v('ct-financial-notes') ? `<div class="ct-financial-row" style="flex-direction:column;gap:3px;"><span style="font-weight:600;">Notes</span><span style="color:#555;font-size:10.5px;">${v('ct-financial-notes')}</span></div>` : ''}
-                        <div class="ct-financial-total">
-                            <span>TOTAL CONTRACT VALUE</span>
+                    <div class="ct-section-label">${C.financialDetails}</div>
+                    <div class="ct-financial-box" style="direction:${dir};font-family:${fontFamily};">
+                        <div class="ct-financial-row"><span>${C.paymentMethod}</span><span>${v('ct-payment-method') || '—'}</span></div>
+                        ${v('ct-payment-terms') ? `<div class="ct-financial-row"><span>${C.paymentTerms}</span><span>${v('ct-payment-terms')}</span></div>` : ''}
+                        ${v('ct-financial-notes') ? `<div class="ct-financial-row" style="flex-direction:column;gap:3px;"><span style="font-weight:600;">${C.notesLabel}</span><span style="color:#555;font-size:10.5px;">${v('ct-financial-notes')}</span></div>` : ''}
+                        <div class="ct-financial-total" style="font-family:${fontFamily};">
+                            <span>${C.totalContractValue}</span>
                             <span>${totalVal > 0 ? new Intl.NumberFormat('en-US',{minimumFractionDigits:2}).format(totalVal) + ' ' + currency : '___________'}</span>
                         </div>
                     </div>
@@ -4429,31 +4668,31 @@
                 <!-- Legal Clauses -->
                 ${clauses.length > 0 ? `
                 <div style="margin-bottom:14px;">
-                    <div class="ct-section-label">TERMS & CONDITIONS | الشروط والأحكام</div>
+                    <div class="ct-section-label">${C.termsConditions}</div>
                     ${clauses.map((cl, i) => `
-                    <div class="ct-clause">
-                        <div><span class="ct-clause-num">${i+1}</span> <span class="ct-clause-title-text">${cl.title}</span></div>
-                        <div class="ct-clause-body" style="margin-top:3px;padding-right:24px;">${cl.text.replace(/\n/g,'<br>')}</div>
+                    <div class="ct-clause" style="direction:${dir};">
+                        <div style="text-align:${alignStyle};"><span class="ct-clause-num">${i+1}</span> <span class="ct-clause-title-text" style="font-family:${fontFamily};direction:${dir};text-align:${alignStyle};">${cl.title}</span></div>
+                        <div class="ct-clause-body" style="margin-top:3px;${isArabic ? 'padding-right:24px;' : 'padding-left:24px;'}direction:${dir};text-align:${alignStyle};font-family:${fontFamily};">${cl.text.replace(/\n/g,'<br>')}</div>
                     </div>`).join('')}
                 </div>` : ''}
 
                 <!-- Signatures -->
                 <div class="ct-sig-grid" style="page-break-inside:avoid;">
                     <div class="ct-sig-block">
-                        <div class="ct-sig-party-label">Party 1 — الطرف الأول</div>
+                        <div class="ct-sig-party-label" style="font-family:${fontFamily};">${C.sigParty1}</div>
                         <div class="ct-sig-name-line"></div>
-                        <div class="ct-sig-name-text">${v('ct-sig1-name') || 'Authorized Representative'}</div>
-                        <div class="ct-sig-role-text">${v('ct-p1-name') || 'OPENY'}</div>
-                        ${v('ct-sig-date') ? `<div class="ct-sig-date-place">Date: ${formatDate(v('ct-sig-date'))}</div>` : ''}
-                        ${v('ct-sig-place') ? `<div class="ct-sig-date-place">Place: ${v('ct-sig-place')}</div>` : ''}
+                        <div class="ct-sig-name-text" style="font-family:${fontFamily};">${v('ct-sig1-name') || C.authorizedRep}</div>
+                        <div class="ct-sig-role-text" style="font-family:${fontFamily};">${v('ct-p1-name') || C.defaultCompanyName}</div>
+                        ${v('ct-sig-date') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigDate} ${fmtDate(v('ct-sig-date'))}</div>` : ''}
+                        ${v('ct-sig-place') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigPlace} ${v('ct-sig-place')}</div>` : ''}
                     </div>
                     <div class="ct-sig-block">
-                        <div class="ct-sig-party-label">Party 2 — الطرف الثاني</div>
+                        <div class="ct-sig-party-label" style="font-family:${fontFamily};">${C.sigParty2}</div>
                         <div class="ct-sig-name-line"></div>
-                        <div class="ct-sig-name-text">${v('ct-sig2-name') || 'Authorized Representative'}</div>
-                        <div class="ct-sig-role-text">${v('ct-p2-name') || 'Client'}</div>
-                        ${v('ct-sig-date') ? `<div class="ct-sig-date-place">Date: ${formatDate(v('ct-sig-date'))}</div>` : ''}
-                        ${v('ct-sig-place') ? `<div class="ct-sig-date-place">Place: ${v('ct-sig-place')}</div>` : ''}
+                        <div class="ct-sig-name-text" style="font-family:${fontFamily};">${v('ct-sig2-name') || C.authorizedRep}</div>
+                        <div class="ct-sig-role-text" style="font-family:${fontFamily};">${v('ct-p2-name') || C.clientNameDefault}</div>
+                        ${v('ct-sig-date') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigDate} ${fmtDate(v('ct-sig-date'))}</div>` : ''}
+                        ${v('ct-sig-place') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigPlace} ${v('ct-sig-place')}</div>` : ''}
                     </div>
                 </div>
             </div>`;
@@ -4477,26 +4716,39 @@
             if (!content) return;
 
             const v = id => document.getElementById(id)?.value || '';
+            const lang = document.getElementById('ec-lang')?.value || empContractLang;
+            const C = CONTRACT_CONTENT[lang] || CONTRACT_CONTENT['ar'];
+            const isArabic = lang === 'ar';
+            const dir = isArabic ? 'rtl' : 'ltr';
+            const fontFamily = isArabic ? "'Amiri','Tajawal',sans-serif" : "'Inter',sans-serif";
+            const alignStyle = isArabic ? 'right' : 'left';
+
             const currency = v('ec-currency') || 'EGP';
             const salary = parseFloat(v('ec-salary')) || 0;
             const clauses = _readClauses('#ec-clauses-container');
             const clauseCountEl = document.getElementById('ec-clauses-count');
             if (clauseCountEl) clauseCountEl.textContent = clauses.length;
 
-            const formatDate = formatContractDate;
+            const fmtDate = (d) => {
+                if (!d) return '___________';
+                try {
+                    const locale = isArabic ? 'ar-EG' : 'en-GB';
+                    return new Date(d + 'T12:00:00').toLocaleDateString(locale, { day:'2-digit', month:'long', year:'numeric' });
+                } catch(e) { return d; }
+            };
 
-            let html = `<div style="font-family:'Inter',sans-serif;">
+            let html = `<div style="font-family:${fontFamily};direction:${dir};">
                 <!-- Header -->
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;${isArabic ? 'flex-direction:row-reverse;' : ''}">
                     <div>
                         <img src="https://i.postimg.cc/PJ0fwSNY/OPENY.png" crossorigin="anonymous" alt="OPENY" style="height:40px;width:auto;object-fit:contain;display:block;">
-                        <div style="font-size:10.5px;color:#6B7280;margin-top:6px;line-height:1.45;font-family:'Inter',sans-serif;">Villa 175, First District, Fifth Settlement, Cairo<br>info@openytalk.com</div>
+                        <div style="font-size:10.5px;color:#6B7280;margin-top:6px;line-height:1.45;font-family:'Inter',sans-serif;direction:ltr;">Villa 175, First District, Fifth Settlement, Cairo<br>info@openytalk.com</div>
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:26px;font-weight:900;letter-spacing:2px;color:#111;margin:0 0 6px 0;">EMPLOYMENT CONTRACT</div>
-                        <div style="font-size:11px;color:#555;line-height:1.7;">
-                            <div><span style="font-weight:700;color:#111;">NO:</span> ${v('ec-num') || '___'}</div>
-                            <div><span style="font-weight:700;color:#111;">DATE:</span> ${formatDate(v('ec-date'))}</div>
+                    <div style="text-align:${isArabic ? 'left' : 'right'};">
+                        <div style="font-size:26px;font-weight:900;letter-spacing:2px;color:#111;margin:0 0 6px 0;font-family:${fontFamily};">${C.employmentContractLabel}</div>
+                        <div style="font-size:11px;color:#555;line-height:1.7;font-family:${fontFamily};text-align:${isArabic ? 'left' : 'right'};">
+                            <div><span style="font-weight:700;color:#111;">${C.noLabel}</span> ${v('ec-num') || '___'}</div>
+                            <div><span style="font-weight:700;color:#111;">${C.dateLabel}</span> ${fmtDate(v('ec-date'))}</div>
                         </div>
                     </div>
                 </div>
@@ -4504,63 +4756,63 @@
 
                 <!-- Title Band -->
                 <div style="text-align:center;margin:12px 0;padding:10px;background:#111;color:#fff;">
-                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Amiri','Tajawal',sans-serif;direction:rtl;">عقد توظيف</div>
-                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Amiri','Tajawal',sans-serif;direction:rtl;">Employment Contract</div>
+                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.empContractTitle}</div>
+                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.empContractSubtitle}</div>
                 </div>
 
                 <!-- Parties -->
                 <div class="ct-party-grid" style="margin:14px 0;">
                     <div class="ct-party-box">
-                        <div class="ct-party-header">EMPLOYER — صاحب العمل</div>
+                        <div class="ct-party-header">${C.employer}</div>
                         <div class="ct-party-body">
-                            <div class="ct-party-name">${v('ec-co-name') || 'OPENY'}</div>
-                            ${v('ec-co-rep') ? `<div class="ct-party-detail">Rep: ${v('ec-co-rep')}</div>` : ''}
-                            ${v('ec-co-address') ? `<div class="ct-party-detail">${v('ec-co-address')}</div>` : ''}
-                            ${v('ec-co-email') ? `<div class="ct-party-detail">${v('ec-co-email')}</div>` : ''}
-                            ${v('ec-co-phone') ? `<div class="ct-party-detail">${v('ec-co-phone')}</div>` : ''}
+                            <div class="ct-party-name" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ec-co-name') || C.defaultCompanyName}</div>
+                            ${v('ec-co-rep') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.repLabel} ${v('ec-co-rep')}</div>` : ''}
+                            ${v('ec-co-address') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ec-co-address')}</div>` : ''}
+                            ${v('ec-co-email') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ec-co-email')}</div>` : ''}
+                            ${v('ec-co-phone') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ec-co-phone')}</div>` : ''}
                         </div>
                     </div>
                     <div class="ct-party-box">
-                        <div class="ct-party-header">EMPLOYEE — الموظف</div>
+                        <div class="ct-party-header">${C.employee}</div>
                         <div class="ct-party-body">
-                            <div class="ct-party-name">${v('ec-emp-name') || 'Employee Name'}</div>
-                            ${v('ec-emp-id') ? `<div class="ct-party-detail">ID: ${v('ec-emp-id')}</div>` : ''}
-                            ${v('ec-emp-address') ? `<div class="ct-party-detail">${v('ec-emp-address')}</div>` : ''}
-                            ${v('ec-emp-phone') ? `<div class="ct-party-detail">${v('ec-emp-phone')}</div>` : ''}
-                            ${v('ec-emp-email') ? `<div class="ct-party-detail">${v('ec-emp-email')}</div>` : ''}
-                            ${v('ec-emp-nationality') ? `<div class="ct-party-detail">Nationality: ${v('ec-emp-nationality')}</div>` : ''}
-                            ${v('ec-emp-marital') ? `<div class="ct-party-detail">Status: ${v('ec-emp-marital')}</div>` : ''}
+                            <div class="ct-party-name" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ec-emp-name') || C.employeeNameDefault}</div>
+                            ${v('ec-emp-id') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.idLabel} ${v('ec-emp-id')}</div>` : ''}
+                            ${v('ec-emp-address') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${v('ec-emp-address')}</div>` : ''}
+                            ${v('ec-emp-phone') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ec-emp-phone')}</div>` : ''}
+                            ${v('ec-emp-email') ? `<div class="ct-party-detail" style="direction:ltr;text-align:${alignStyle};font-family:'Inter',sans-serif;">${v('ec-emp-email')}</div>` : ''}
+                            ${v('ec-emp-nationality') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.nationalityLabel} ${v('ec-emp-nationality')}</div>` : ''}
+                            ${v('ec-emp-marital') ? `<div class="ct-party-detail" style="font-family:${fontFamily};text-align:${alignStyle};">${C.maritalLabel} ${v('ec-emp-marital')}</div>` : ''}
                         </div>
                     </div>
                 </div>
 
                 <!-- Job & Employment Details -->
                 <div style="margin-bottom:14px;page-break-inside:avoid;">
-                    <div class="ct-section-label">JOB DETAILS | تفاصيل الوظيفة</div>
-                    <div class="ct-financial-box">
-                        ${v('ec-job-title') ? `<div class="ct-financial-row"><span>Job Title</span><span style="font-weight:700;">${v('ec-job-title')}</span></div>` : ''}
-                        ${v('ec-job-dept') ? `<div class="ct-financial-row"><span>Department</span><span>${v('ec-job-dept')}</span></div>` : ''}
-                        ${v('ec-job-manager') ? `<div class="ct-financial-row"><span>Direct Manager</span><span>${v('ec-job-manager')}</span></div>` : ''}
-                        ${v('ec-job-type') ? `<div class="ct-financial-row"><span>Employment Type</span><span>${v('ec-job-type')}</span></div>` : ''}
-                        ${v('ec-start-date') ? `<div class="ct-financial-row"><span>Start Date</span><span>${formatDate(v('ec-start-date'))}</span></div>` : ''}
-                        ${v('ec-emp-duration') ? `<div class="ct-financial-row"><span>Duration</span><span>${v('ec-emp-duration')}</span></div>` : ''}
-                        ${v('ec-probation') ? `<div class="ct-financial-row"><span>Probation Period</span><span>${v('ec-probation')}</span></div>` : ''}
-                        ${v('ec-workplace') ? `<div class="ct-financial-row"><span>Workplace</span><span>${v('ec-workplace')}</span></div>` : ''}
+                    <div class="ct-section-label">${C.jobDetails}</div>
+                    <div class="ct-financial-box" style="direction:${dir};font-family:${fontFamily};">
+                        ${v('ec-job-title') ? `<div class="ct-financial-row"><span>${C.jobTitle}</span><span style="font-weight:700;">${v('ec-job-title')}</span></div>` : ''}
+                        ${v('ec-job-dept') ? `<div class="ct-financial-row"><span>${C.department}</span><span>${v('ec-job-dept')}</span></div>` : ''}
+                        ${v('ec-job-manager') ? `<div class="ct-financial-row"><span>${C.directManager}</span><span>${v('ec-job-manager')}</span></div>` : ''}
+                        ${v('ec-job-type') ? `<div class="ct-financial-row"><span>${C.employmentType}</span><span>${v('ec-job-type')}</span></div>` : ''}
+                        ${v('ec-start-date') ? `<div class="ct-financial-row"><span>${C.startDate}</span><span>${fmtDate(v('ec-start-date'))}</span></div>` : ''}
+                        ${v('ec-emp-duration') ? `<div class="ct-financial-row"><span>${C.duration}</span><span>${v('ec-emp-duration')}</span></div>` : ''}
+                        ${v('ec-probation') ? `<div class="ct-financial-row"><span>${C.probation}</span><span>${v('ec-probation')}</span></div>` : ''}
+                        ${v('ec-workplace') ? `<div class="ct-financial-row"><span>${C.workplace}</span><span>${v('ec-workplace')}</span></div>` : ''}
                     </div>
                 </div>
 
                 <!-- Salary & Hours -->
                 <div style="margin-bottom:14px;page-break-inside:avoid;">
-                    <div class="ct-section-label">COMPENSATION | الراتب والمزايا</div>
-                    <div class="ct-financial-box">
-                        ${v('ec-pay-method') ? `<div class="ct-financial-row"><span>Payment Method</span><span>${v('ec-pay-method')}</span></div>` : ''}
-                        ${v('ec-pay-date') ? `<div class="ct-financial-row"><span>Payment Date</span><span>${v('ec-pay-date')}</span></div>` : ''}
-                        ${v('ec-daily-hours') ? `<div class="ct-financial-row"><span>Daily Hours</span><span>${v('ec-daily-hours')} hrs/day</span></div>` : ''}
-                        ${v('ec-work-days') ? `<div class="ct-financial-row"><span>Work Days</span><span>${v('ec-work-days')}</span></div>` : ''}
-                        ${v('ec-vacations') ? `<div class="ct-financial-row"><span>Annual Leave</span><span>${v('ec-vacations')}</span></div>` : ''}
-                        ${v('ec-benefits') ? `<div class="ct-financial-row"><span>Benefits</span><span>${v('ec-benefits')}</span></div>` : ''}
-                        <div class="ct-financial-total">
-                            <span>BASIC MONTHLY SALARY</span>
+                    <div class="ct-section-label">${C.compensation}</div>
+                    <div class="ct-financial-box" style="direction:${dir};font-family:${fontFamily};">
+                        ${v('ec-pay-method') ? `<div class="ct-financial-row"><span>${C.paymentMethod}</span><span>${v('ec-pay-method')}</span></div>` : ''}
+                        ${v('ec-pay-date') ? `<div class="ct-financial-row"><span>${C.paymentDate}</span><span>${v('ec-pay-date')}</span></div>` : ''}
+                        ${v('ec-daily-hours') ? `<div class="ct-financial-row"><span>${C.dailyHours}</span><span>${v('ec-daily-hours')} ${C.hrsPerDay}</span></div>` : ''}
+                        ${v('ec-work-days') ? `<div class="ct-financial-row"><span>${C.workDays}</span><span>${v('ec-work-days')}</span></div>` : ''}
+                        ${v('ec-vacations') ? `<div class="ct-financial-row"><span>${C.annualLeave}</span><span>${v('ec-vacations')}</span></div>` : ''}
+                        ${v('ec-benefits') ? `<div class="ct-financial-row"><span>${C.benefits}</span><span>${v('ec-benefits')}</span></div>` : ''}
+                        <div class="ct-financial-total" style="font-family:${fontFamily};">
+                            <span>${C.basicMonthlySalary}</span>
                             <span>${salary > 0 ? new Intl.NumberFormat('en-US',{minimumFractionDigits:2}).format(salary) + ' ' + currency : '___________'}</span>
                         </div>
                     </div>
@@ -4569,31 +4821,31 @@
                 <!-- Legal Clauses -->
                 ${clauses.length > 0 ? `
                 <div style="margin-bottom:14px;">
-                    <div class="ct-section-label">TERMS & CONDITIONS | الشروط والأحكام</div>
+                    <div class="ct-section-label">${C.termsConditions}</div>
                     ${clauses.map((cl, i) => `
-                    <div class="ct-clause">
-                        <div><span class="ct-clause-num">${i+1}</span> <span class="ct-clause-title-text">${cl.title}</span></div>
-                        <div class="ct-clause-body" style="margin-top:3px;padding-right:24px;">${cl.text.replace(/\n/g,'<br>')}</div>
+                    <div class="ct-clause" style="direction:${dir};">
+                        <div style="text-align:${alignStyle};"><span class="ct-clause-num">${i+1}</span> <span class="ct-clause-title-text" style="font-family:${fontFamily};direction:${dir};text-align:${alignStyle};">${cl.title}</span></div>
+                        <div class="ct-clause-body" style="margin-top:3px;${isArabic ? 'padding-right:24px;' : 'padding-left:24px;'}direction:${dir};text-align:${alignStyle};font-family:${fontFamily};">${cl.text.replace(/\n/g,'<br>')}</div>
                     </div>`).join('')}
                 </div>` : ''}
 
                 <!-- Signatures -->
                 <div class="ct-sig-grid" style="page-break-inside:avoid;">
                     <div class="ct-sig-block">
-                        <div class="ct-sig-party-label">Employer — صاحب العمل</div>
+                        <div class="ct-sig-party-label" style="font-family:${fontFamily};">${C.empEmployer}</div>
                         <div class="ct-sig-name-line"></div>
-                        <div class="ct-sig-name-text">${v('ec-sig1-name') || 'Company Representative'}</div>
-                        <div class="ct-sig-role-text">${v('ec-co-name') || 'OPENY'}</div>
-                        ${v('ec-sig-date') ? `<div class="ct-sig-date-place">Date: ${formatDate(v('ec-sig-date'))}</div>` : ''}
-                        ${v('ec-sig-place') ? `<div class="ct-sig-date-place">Place: ${v('ec-sig-place')}</div>` : ''}
+                        <div class="ct-sig-name-text" style="font-family:${fontFamily};">${v('ec-sig1-name') || C.companyRep}</div>
+                        <div class="ct-sig-role-text" style="font-family:${fontFamily};">${v('ec-co-name') || C.defaultCompanyName}</div>
+                        ${v('ec-sig-date') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigDate} ${fmtDate(v('ec-sig-date'))}</div>` : ''}
+                        ${v('ec-sig-place') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigPlace} ${v('ec-sig-place')}</div>` : ''}
                     </div>
                     <div class="ct-sig-block">
-                        <div class="ct-sig-party-label">Employee — الموظف</div>
+                        <div class="ct-sig-party-label" style="font-family:${fontFamily};">${C.empEmployee}</div>
                         <div class="ct-sig-name-line"></div>
-                        <div class="ct-sig-name-text">${v('ec-sig2-name') || v('ec-emp-name') || 'Employee'}</div>
-                        <div class="ct-sig-role-text">${v('ec-job-title') || ''}</div>
-                        ${v('ec-sig-date') ? `<div class="ct-sig-date-place">Date: ${formatDate(v('ec-sig-date'))}</div>` : ''}
-                        ${v('ec-sig-place') ? `<div class="ct-sig-date-place">Place: ${v('ec-sig-place')}</div>` : ''}
+                        <div class="ct-sig-name-text" style="font-family:${fontFamily};">${v('ec-sig2-name') || v('ec-emp-name') || C.employeeNameDefault}</div>
+                        <div class="ct-sig-role-text" style="font-family:${fontFamily};">${v('ec-job-title') || ''}</div>
+                        ${v('ec-sig-date') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigDate} ${fmtDate(v('ec-sig-date'))}</div>` : ''}
+                        ${v('ec-sig-place') ? `<div class="ct-sig-date-place" style="font-family:${fontFamily};">${C.sigPlace} ${v('ec-sig-place')}</div>` : ''}
                     </div>
                 </div>
             </div>`;
@@ -4767,34 +5019,37 @@
             const filename = sanitizeFilename(clientName, refNum).replace('.pdf', '.doc');
 
             try {
+                const ctLang = isEmp ? (document.getElementById('ec-lang')?.value || empContractLang) : (document.getElementById('ct-lang')?.value || contractLang);
+                const isCtArabic = ctLang === 'ar';
+                const bodyFont = isCtArabic ? "'Amiri', 'Tajawal', 'Arial', sans-serif" : "'Arial', 'Calibri', sans-serif";
                 const styleBlock = `<style>
                     @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
                     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap');
-                    body { font-family: 'Amiri', 'Tajawal', 'Arial', sans-serif; font-size: 11pt; color: #111; direction: rtl; }
+                    body { font-family: ${bodyFont}; font-size: 11pt; color: #111; direction: ${isCtArabic ? 'rtl' : 'ltr'}; }
                     .ct-header-divider { border-top: 3px solid #111; margin: 10pt 0 14pt; }
                     .ct-section-label { background: #111; color: #fff; font-size: 9pt; font-weight: bold; letter-spacing: 1pt; text-transform: uppercase; padding: 5pt 8pt; display: inline-block; margin-bottom: 8pt; }
                     .ct-party-grid { display: table; width: 100%; border-collapse: separate; border-spacing: 10pt; }
                     .ct-party-box { display: table-cell; border: 1.5pt solid #111; padding: 8pt; width: 50%; vertical-align: top; }
                     .ct-party-header { background: #111; color: #fff; font-size: 8pt; font-weight: bold; padding: 5pt 8pt; margin: -8pt -8pt 8pt; display: block; }
-                    .ct-party-name { font-size: 14pt; font-weight: bold; font-family: 'Amiri', 'Tajawal', Arial, sans-serif; }
-                    .ct-party-detail { font-size: 9pt; color: #555; margin-top: 2pt; font-family: 'Amiri', 'Tajawal', Arial, sans-serif; }
+                    .ct-party-name { font-size: 14pt; font-weight: bold; font-family: ${bodyFont}; }
+                    .ct-party-detail { font-size: 9pt; color: #555; margin-top: 2pt; font-family: ${bodyFont}; }
                     .ct-financial-box { border: 1pt solid #ddd; padding: 10pt; background: #f9f9f9; }
                     .ct-financial-row { display: flex; justify-content: space-between; font-size: 10pt; padding: 4pt 0; border-bottom: 1pt solid #eee; }
                     .ct-financial-total { background: #111; color: #fff; padding: 8pt 10pt; font-size: 11pt; font-weight: bold; display: flex; justify-content: space-between; margin: 6pt -10pt -10pt; }
                     .ct-clause { margin-bottom: 10pt; page-break-inside: avoid; }
                     .ct-clause-num { background: #111; color: #fff; font-size: 8pt; font-weight: bold; padding: 2pt 6pt; }
-                    .ct-clause-title-text { font-size: 11pt; font-weight: bold; direction: rtl; text-align: right; font-family: 'Amiri', 'Tajawal', Arial, sans-serif; }
-                    .ct-clause-body { font-size: 10pt; line-height: 1.8; direction: rtl; text-align: right; padding-right: 20pt; color: #333; font-family: 'Amiri', 'Tajawal', Arial, sans-serif; }
+                    .ct-clause-title-text { font-size: 11pt; font-weight: bold; font-family: ${bodyFont}; }
+                    .ct-clause-body { font-size: 10pt; line-height: 1.8; color: #333; font-family: ${bodyFont}; }
                     .ct-sig-grid { display: table; width: 100%; margin-top: 24pt; border-top: 2pt solid #111; padding-top: 14pt; }
                     .ct-sig-block { display: table-cell; width: 50%; text-align: center; padding: 0 20pt; }
                     .ct-sig-party-label { background: #111; color: #fff; font-size: 8pt; font-weight: bold; padding: 3pt 7pt; }
                     .ct-sig-name-line { border-bottom: 1.5pt solid #111; margin: 20pt 0 6pt; }
-                    .ct-sig-name-text { font-size: 10pt; font-weight: bold; font-family: 'Amiri', 'Tajawal', Arial, sans-serif; }
+                    .ct-sig-name-text { font-size: 10pt; font-weight: bold; font-family: ${bodyFont}; }
                     .arabic-text { font-family: 'Amiri', 'Tajawal', Arial, sans-serif !important; direction: rtl; text-align: right; }
                 </style>`;
                 const htmlContent = element.innerHTML;
-                const dir = appLang === 'ar' ? 'rtl' : 'ltr';
-                const fullHtml = `<!DOCTYPE html><html dir="${dir}" lang="${appLang}"><head><meta charset="UTF-8">${styleBlock}</head><body style="direction:${dir};">${htmlContent}</body></html>`;
+                const dir = isCtArabic ? 'rtl' : 'ltr';
+                const fullHtml = `<!DOCTYPE html><html dir="${dir}" lang="${ctLang}"><head><meta charset="UTF-8">${styleBlock}</head><body style="direction:${dir};">${htmlContent}</body></html>`;
                 const blob = new Blob(['\ufeff', fullHtml], { type: 'application/msword' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -4850,23 +5105,23 @@
             // Load default services for client contract
             const ctSvcContainer = document.getElementById('ct-services-container');
             if (ctSvcContainer && ctSvcContainer.children.length === 0) {
-                getDefaultContractServices().forEach(s => window.addContractService(s));
+                getDefaultContractServices(contractLang).forEach(s => window.addContractService(s));
             }
 
             // Load default clauses for client contract
             const ctClContainer = document.getElementById('ct-clauses-container');
             if (ctClContainer && ctClContainer.children.length === 0) {
-                getDefaultClientClauses().forEach(cl => _renderClauseRow('ct', cl, ctClContainer));
+                getDefaultClientClauses(contractLang).forEach(cl => _renderClauseRow('ct', cl, ctClContainer, contractLang));
                 const cc = document.getElementById('ct-clauses-count');
-                if (cc) cc.textContent = getDefaultClientClauses().length;
+                if (cc) cc.textContent = getDefaultClientClauses(contractLang).length;
             }
 
             // Load default clauses for employee contract
             const ecClContainer = document.getElementById('ec-clauses-container');
             if (ecClContainer && ecClContainer.children.length === 0) {
-                getDefaultEmpClauses().forEach(cl => _renderEmpClauseRow(cl, ecClContainer));
+                getDefaultEmpClauses(empContractLang).forEach(cl => _renderEmpClauseRow(cl, ecClContainer, empContractLang));
                 const ec = document.getElementById('ec-clauses-count');
-                if (ec) ec.textContent = getDefaultEmpClauses().length;
+                if (ec) ec.textContent = getDefaultEmpClauses(empContractLang).length;
             }
         }
 
@@ -4975,13 +5230,14 @@
         // ARABIC PDF FIX HELPER
         // Wait for fonts and set proper direction before export
         // ==========================================================================
-        async function prepareElementForExport(element) {
+        async function prepareElementForExport(element, langOverride) {
             // Wait for all fonts (including Amiri) to load
             try { await document.fonts.ready; } catch(e) {}
             // Additional stabilization delay
             await new Promise(r => setTimeout(r, 250));
             // Apply correct direction for Arabic
-            if (appLang === 'ar') {
+            const lang = langOverride || appLang;
+            if (lang === 'ar') {
                 element.style.direction = 'rtl';
                 element.setAttribute('dir', 'rtl');
                 // Ensure Amiri font is applied for proper Arabic shaping
@@ -5038,12 +5294,13 @@
         window.lazyGenerateContractPDF = async function(type) {
             const isEmp = type === 'empcontract';
             const elementId = isEmp ? 'empContractPageContent' : 'contractPageContent';
+            const ctLang = isEmp ? (document.getElementById('ec-lang')?.value || empContractLang) : (document.getElementById('ct-lang')?.value || contractLang);
             const element = document.getElementById(elementId);
             if (element) {
                 const origDir = element.style.direction;
                 const origFont = element.style.fontFamily;
                 const origAttrDir = element.getAttribute('dir');
-                await prepareElementForExport(element);
+                await prepareElementForExport(element, ctLang);
                 try { await _origLazyCtPDF.call(this, type); } finally {
                     element.style.direction = origDir;
                     element.style.fontFamily = origFont;
