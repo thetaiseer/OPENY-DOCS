@@ -3503,6 +3503,7 @@
         window.openLanding = function() {
             const landing = document.getElementById('landing-screen');
             if (landing) {
+                landing.scrollTop = 0;
                 landing.style.display = 'flex';
                 landing.style.opacity = '0';
                 landing.classList.remove('fade-out');
@@ -3842,9 +3843,16 @@
 
         // Always scroll to top on page load, refresh, or back/forward navigation
         window.addEventListener('load', function() { window.scrollTo(0, 0); });
-        window.addEventListener('pageshow', function() {
-            // Use requestAnimationFrame to run after the browser's own scroll restoration
-            requestAnimationFrame(function() { window.scrollTo(0, 0); });
+        window.addEventListener('pageshow', function(e) {
+            // Double rAF ensures we run after the browser's own scroll restoration,
+            // including when the page is restored from the back/forward cache (persisted).
+            requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                    window.scrollTo(0, 0);
+                    const landing = document.getElementById('landing-screen');
+                    if (landing) landing.scrollTop = 0;
+                });
+            });
         });
 
         document.addEventListener("DOMContentLoaded", () => {
