@@ -939,6 +939,11 @@
         .emp-table tbody tr:last-child td { border-bottom: none; }
         .emp-table tbody tr:hover td { background: rgba(37,99,235,0.03); }
         .emp-table .emp-name { font-weight: 600; color: var(--text-main); }
+        .emp-table .emp-cell-id { font-family: monospace; font-size: 0.78rem; }
+        .emp-table .emp-cell-num { text-align: center; }
+        .emp-table .emp-cell-salary { font-weight: 700; color: #0F172A; }
+        .emp-table .emp-cell-addr { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .emp-table .emp-cell-phone { white-space: nowrap; }
         /* Status badges */
         .emp-badge {
             display: inline-block; padding: 2px 10px; border-radius: 999px;
@@ -2714,6 +2719,7 @@
                         <option value="">All Types</option>
                         <option value="Full-time">Full-time</option>
                         <option value="Part-time">Part-time</option>
+                        <option value="Freelance">Freelance</option>
                         <option value="Contract">Contract</option>
                         <option value="Temporary">Temporary</option>
                     </select>
@@ -2728,20 +2734,23 @@
                 <table class="emp-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
+                            <th>Employee ID</th>
+                            <th>Full Name</th>
                             <th>Job Title</th>
-                            <th>Department</th>
-                            <th>Type</th>
+                            <th>Employment Type</th>
+                            <th>Date of Birth</th>
+                            <th>Phone</th>
+                            <th>Address</th>
                             <th>Hire Date</th>
-                            <th>Salary</th>
+                            <th>Contract Duration</th>
                             <th>Status</th>
-                            <th>Contract</th>
+                            <th>Daily Hours</th>
+                            <th>Salary</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="emp-table-body">
-                        <tr><td colspan="10" class="emp-empty-state" style="text-align:center;padding:32px;">No employees found.</td></tr>
+                        <tr><td colspan="13" class="emp-empty-state" style="text-align:center;padding:32px;">No employees found.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -2929,6 +2938,7 @@
                         <select id="ef-employmentType" class="ui-input">
                             <option value="Full-time">Full-time</option>
                             <option value="Part-time">Part-time</option>
+                            <option value="Freelance">Freelance</option>
                             <option value="Contract">Contract</option>
                             <option value="Temporary">Temporary</option>
                         </select>
@@ -3012,6 +3022,10 @@
                 <!-- Contract Info -->
                 <div class="emp-form-section-title" style="margin-top:1.25rem;">Linked HR Contract (optional)</div>
                 <div class="emp-form-grid">
+                    <div class="ui-form-group mb-0">
+                        <label class="ui-label">Contract Duration (months)</label>
+                        <input type="number" id="ef-contractDuration" class="ui-input" placeholder="e.g. 12" min="0">
+                    </div>
                     <div class="ui-form-group mb-0">
                         <label class="ui-label">Contract ID / Reference</label>
                         <input type="text" id="ef-linkedContractId" class="ui-input" placeholder="Search contract number…" list="emp-contract-datalist" oninput="window.onContractSearch(this.value)">
@@ -7351,24 +7365,24 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             const tbody = document.getElementById('emp-table-body');
             if (!tbody) return;
             if (filtered.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:#94A3B8;">No employees found.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:32px;color:#94A3B8;">No employees found.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = filtered.map(e => {
-                const contractBadge = e.linkedContractNumber
-                    ? `<span class="emp-badge" style="background:rgba(37,99,235,0.1);color:#2563EB;">${e.linkedContractNumber}</span>`
-                    : `<span class="emp-no-contract">No contract</span>`;
                 return `<tr>
-                    <td style="font-family:monospace;font-size:0.78rem;">${e.employeeId || '—'}</td>
+                    <td class="emp-cell-id">${e.employeeId || '—'}</td>
                     <td class="emp-name">${e.fullName}</td>
                     <td>${e.jobTitle || '—'}</td>
-                    <td>${e.department || '—'}</td>
                     <td>${e.employmentType || '—'}</td>
+                    <td>${empFmtDate(e.dob)}</td>
+                    <td class="emp-cell-phone">${e.phone || '—'}</td>
+                    <td class="emp-cell-addr" title="${e.address || ''}">${e.address || '—'}</td>
                     <td>${empFmtDate(e.hireDate)}</td>
-                    <td style="font-weight:700;color:#0F172A;">${empFmtCurrency(e.currentSalary, e.currency)}</td>
+                    <td class="emp-cell-num">${e.contractDuration ? e.contractDuration + ' mo' : '—'}</td>
                     <td>${empStatusBadge(e.status)}</td>
-                    <td>${contractBadge}</td>
+                    <td class="emp-cell-num">${e.dailyHours ? e.dailyHours + ' hrs' : '—'}</td>
+                    <td class="emp-cell-salary">${empFmtCurrency(e.currentSalary, e.currency)}</td>
                     <td>
                         <div class="emp-actions-cell">
                             <button class="emp-action-btn emp-action-btn-view" onclick="window.openEmployeeProfile('${e.id}')">
@@ -7520,7 +7534,7 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             // Reset fields
             ['ef-fullName','ef-employeeId','ef-nationalId','ef-phone','ef-email','ef-dob','ef-nationality','ef-address',
              'ef-jobTitle','ef-department','ef-manager','ef-workLocation','ef-probation','ef-workDays','ef-dailyHours',
-             'ef-currentSalary','ef-allowances','ef-bonuses','ef-linkedContractId','ef-linkedContractNumber','ef-salaryNote'].forEach(id => {
+             'ef-currentSalary','ef-allowances','ef-bonuses','ef-linkedContractId','ef-linkedContractNumber','ef-contractDuration','ef-salaryNote'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
@@ -7577,6 +7591,7 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             sv('ef-bonuses', emp.bonuses);
             sv('ef-linkedContractId', emp.linkedContractId);
             sv('ef-linkedContractNumber', emp.linkedContractNumber);
+            sv('ef-contractDuration', emp.contractDuration);
             // Hide salary note on edit (use salary adjustment for that)
             const noteWrap = document.getElementById('ef-salary-note-wrap');
             if (noteWrap) noteWrap.style.display = 'none';
@@ -7629,6 +7644,7 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
                 bonuses: parseFloat(document.getElementById('ef-bonuses').value) || 0,
                 linkedContractId: document.getElementById('ef-linkedContractId').value.trim(),
                 linkedContractNumber: document.getElementById('ef-linkedContractNumber').value.trim(),
+                contractDuration: parseInt(document.getElementById('ef-contractDuration').value, 10) || 0,
                 updatedAt: new Date().toISOString(),
                 createdAt: isNew ? new Date().toISOString() : (localStore.getAll('employees').find(e => e.id === id)?.createdAt || new Date().toISOString())
             };
