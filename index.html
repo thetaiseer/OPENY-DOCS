@@ -4359,17 +4359,17 @@
             parts.push(`
                 <div class="scale-wrapper" style="transform-origin: top left; width: 100%;">
                 <div class="avoid-break">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;">
                         <div style="display: flex; flex-direction: column;">
                             <img src="https://i.postimg.cc/PJ0fwSNY/OPENY.png" crossorigin="anonymous" alt="OPENY" style="height: 40px; width: auto; object-fit: contain; align-self: flex-start;">
-                            <div style="font-size: 11px; color: #555; margin-top: 6px; line-height: 1.5; font-family: 'Inter', sans-serif;">Villa 175, First District, Fifth Settlement<br>info@openytalk.com<br>openytalk.com</div>
+                            <div style="font-size: 10.5px; color: #6B7280; margin-top: 6px; line-height: 1.45; font-family: 'Inter', sans-serif;">Villa 175, First District, Fifth Settlement, Cairo<br>info@openytalk.com</div>
                         </div>
                         <div style="text-align: right; font-family: 'Inter', sans-serif;">
                             <div style="font-size: 31px; font-weight: 900; letter-spacing: 2px; color: #111; line-height: 1; margin: 0 0 8px 0;">INVOICE</div>
                             <div style="font-size: 11px; color: #555; line-height: 1.6;"><div><span style="font-weight: 700; color: #111;">REF:</span> ${invoiceRef}</div><div><span style="font-weight: 700; color: #111;">DATE:</span> ${data.invoiceDate}</div></div>
                         </div>
                     </div>
-                    <div style="height: 2px; background: #111; margin: 14px 0 20px 0;"></div>
+                    <div style="height: 3px; background: #111; margin: 12px 0 16px 0;"></div>
                     <div style="display: flex; gap: 36px; margin-bottom: 16px;">
                         <div style="flex: 1;">
                             <div style="display: inline-block; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: #fff; background: #111; padding: 6px 10px; border-radius: 0; font-family: 'Inter', sans-serif;">BILLED TO</div>
@@ -4639,9 +4639,8 @@
                         <div class="company-section">
                             <img src="https://i.postimg.cc/PJ0fwSNY/OPENY.png" crossorigin="anonymous" class="quote-logo" alt="OPENY">
                             <div class="company-details">
-                                Villa 175, First District, Fifth Settlement<br>
-                                info@openytalk.com<br>
-                                openytalk.com
+                                Villa 175, First District, Fifth Settlement, Cairo<br>
+                                info@openytalk.com
                             </div>
                         </div>
                         <div class="quotation-section">
@@ -6098,7 +6097,7 @@
             const C = CONTRACT_CONTENT[isArabic ? 'ar' : 'en'];
             const clauseDir = isArabic ? 'rtl' : 'ltr';
             const clauseAlign = isArabic ? 'right' : 'left';
-            const clauseFont = isArabic ? "'Amiri','Tajawal',sans-serif" : 'inherit';
+            const clauseFont = isArabic ? "'Cairo',sans-serif" : 'inherit';
             const row = document.createElement('div');
             row.className = 'ct-clause-editor-row';
             row.id = 'row-' + clause.id;
@@ -6121,7 +6120,7 @@
             const C = CONTRACT_CONTENT[isArabic ? 'ar' : 'en'];
             const clauseDir = isArabic ? 'rtl' : 'ltr';
             const clauseAlign = isArabic ? 'right' : 'left';
-            const clauseFont = isArabic ? "'Amiri','Tajawal',sans-serif" : 'inherit';
+            const clauseFont = isArabic ? "'Cairo',sans-serif" : 'inherit';
             const row = document.createElement('div');
             row.className = 'ct-clause-editor-row';
             row.id = 'erow-' + clause.id;
@@ -6217,7 +6216,7 @@
             const C = CONTRACT_CONTENT[lang] || CONTRACT_CONTENT['ar'];
             const isArabic = lang === 'ar';
             const dir = isArabic ? 'rtl' : 'ltr';
-            const fontFamily = isArabic ? "'Amiri','Tajawal',sans-serif" : "'Inter',sans-serif";
+            const fontFamily = isArabic ? "'Cairo',sans-serif" : "'Inter',sans-serif";
             const alignStyle = isArabic ? 'right' : 'left';
 
             const currency = v('ct-currency') || 'EGP';
@@ -6257,10 +6256,8 @@
 
                 <!-- Title Band -->
                 <div style="text-align:center;margin:12px 0;padding:10px;background:#111;color:#fff;">
-                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.clientContractTitle}</div>
-                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.clientContractSubtitle}</div>
-                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Cairo',sans-serif;direction:rtl;">عقد خدمات تسويق رقمي</div>
-                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Cairo',sans-serif;direction:rtl;">Digital Marketing Services Agreement</div>
+                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Cairo',sans-serif;direction:${dir};">${C.clientContractTitle}</div>
+                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Cairo',sans-serif;direction:${dir};">${C.clientContractSubtitle}</div>
                 </div>
 
                 <!-- Parties -->
@@ -6365,7 +6362,7 @@
             const C = CONTRACT_CONTENT[lang] || CONTRACT_CONTENT['ar'];
             const isArabic = lang === 'ar';
             const dir = isArabic ? 'rtl' : 'ltr';
-            const fontFamily = isArabic ? "'Amiri','Tajawal',sans-serif" : "'Inter',sans-serif";
+            const fontFamily = isArabic ? "'Cairo',sans-serif" : "'Inter',sans-serif";
             const alignStyle = isArabic ? 'right' : 'left';
 
             const currency = v('ec-currency') || 'EGP';
@@ -6401,10 +6398,8 @@
 
                 <!-- Title Band -->
                 <div style="text-align:center;margin:12px 0;padding:10px;background:#111;color:#fff;">
-                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.empContractTitle}</div>
-                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Amiri','Tajawal',sans-serif;direction:${dir};">${C.empContractSubtitle}</div>
-                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Cairo',sans-serif;direction:rtl;">عقد توظيف</div>
-                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Cairo',sans-serif;direction:rtl;">Employment Contract</div>
+                    <div style="font-size:18px;font-weight:900;letter-spacing:1px;font-family:'Cairo',sans-serif;direction:${dir};">${C.empContractTitle}</div>
+                    <div style="font-size:11px;opacity:0.8;margin-top:3px;font-family:'Cairo',sans-serif;direction:${dir};">${C.empContractSubtitle}</div>
                 </div>
 
                 <!-- Parties -->
@@ -6668,13 +6663,10 @@
             try {
                 const ctLang = isEmp ? (document.getElementById('ec-lang')?.value || empContractLang) : (document.getElementById('ct-lang')?.value || contractLang);
                 const isCtArabic = ctLang === 'ar';
-                const bodyFont = isCtArabic ? "'Amiri', 'Tajawal', 'Arial', sans-serif" : "'Arial', 'Calibri', sans-serif";
+                const bodyFont = isCtArabic ? "'Cairo', sans-serif" : "'Arial', 'Calibri', sans-serif";
                 const styleBlock = `<style>
-                    @import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap');
-                    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap');
-                    body { font-family: ${bodyFont}; font-size: 11pt; color: #111; direction: ${isCtArabic ? 'rtl' : 'ltr'}; }
                     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
-                    body { font-family: 'Cairo', sans-serif; font-size: 11pt; color: #111; direction: rtl; }
+                    body { font-family: ${bodyFont}; font-size: 11pt; color: #111; direction: ${isCtArabic ? 'rtl' : 'ltr'}; }
                     .ct-header-divider { border-top: 3px solid #111; margin: 10pt 0 14pt; }
                     .ct-section-label { background: #111; color: #fff; font-size: 9pt; font-weight: bold; letter-spacing: 1pt; text-transform: uppercase; padding: 5pt 8pt; display: inline-block; margin-bottom: 8pt; }
                     .ct-party-grid { display: table; width: 100%; border-collapse: separate; border-spacing: 10pt; }
@@ -6682,24 +6674,18 @@
                     .ct-party-header { background: #111; color: #fff; font-size: 8pt; font-weight: bold; padding: 5pt 8pt; margin: -8pt -8pt 8pt; display: block; }
                     .ct-party-name { font-size: 14pt; font-weight: bold; font-family: ${bodyFont}; }
                     .ct-party-detail { font-size: 9pt; color: #555; margin-top: 2pt; font-family: ${bodyFont}; }
-                    .ct-party-name { font-size: 14pt; font-weight: bold; font-family: 'Cairo', sans-serif; }
-                    .ct-party-detail { font-size: 9pt; color: #555; margin-top: 2pt; font-family: 'Cairo', sans-serif; }
                     .ct-financial-box { border: 1pt solid #ddd; padding: 10pt; background: #f9f9f9; }
                     .ct-financial-row { display: flex; justify-content: space-between; font-size: 10pt; padding: 4pt 0; border-bottom: 1pt solid #eee; }
                     .ct-financial-total { background: #111; color: #fff; padding: 8pt 10pt; font-size: 11pt; font-weight: bold; display: flex; justify-content: space-between; margin: 6pt -10pt -10pt; }
                     .ct-clause { margin-bottom: 10pt; page-break-inside: avoid; }
                     .ct-clause-num { background: #111; color: #fff; font-size: 8pt; font-weight: bold; padding: 2pt 6pt; }
-                    .ct-clause-title-text { font-size: 11pt; font-weight: bold; font-family: ${bodyFont}; }
-                    .ct-clause-body { font-size: 10pt; line-height: 1.8; color: #333; font-family: ${bodyFont}; }
-                    .ct-clause-title-text { font-size: 11pt; font-weight: bold; direction: rtl; text-align: right; font-family: 'Cairo', sans-serif; }
-                    .ct-clause-body { font-size: 10pt; line-height: 1.8; direction: rtl; text-align: right; padding-right: 20pt; color: #333; font-family: 'Cairo', sans-serif; }
+                    .ct-clause-title-text { font-size: 11pt; font-weight: bold; direction: ${isCtArabic ? 'rtl' : 'ltr'}; text-align: ${isCtArabic ? 'right' : 'left'}; font-family: ${bodyFont}; }
+                    .ct-clause-body { font-size: 10pt; line-height: 1.8; direction: ${isCtArabic ? 'rtl' : 'ltr'}; text-align: ${isCtArabic ? 'right' : 'left'}; padding-${isCtArabic ? 'right' : 'left'}: 20pt; color: #333; font-family: ${bodyFont}; }
                     .ct-sig-grid { display: table; width: 100%; margin-top: 24pt; border-top: 2pt solid #111; padding-top: 14pt; }
                     .ct-sig-block { display: table-cell; width: 50%; text-align: center; padding: 0 20pt; }
                     .ct-sig-party-label { background: #111; color: #fff; font-size: 8pt; font-weight: bold; padding: 3pt 7pt; }
                     .ct-sig-name-line { border-bottom: 1.5pt solid #111; margin: 20pt 0 6pt; }
                     .ct-sig-name-text { font-size: 10pt; font-weight: bold; font-family: ${bodyFont}; }
-                    .arabic-text { font-family: 'Amiri', 'Tajawal', Arial, sans-serif !important; direction: rtl; text-align: right; }
-                    .ct-sig-name-text { font-size: 10pt; font-weight: bold; font-family: 'Cairo', sans-serif; }
                     .arabic-text { font-family: 'Cairo', sans-serif !important; direction: rtl; text-align: right; }
                 </style>`;
                 const htmlContent = element.innerHTML;
