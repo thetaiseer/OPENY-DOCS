@@ -119,7 +119,8 @@
 
         /* Highly Visible Input Fields */
         .ui-input {
-            width: 100%; 
+            width: 100%;
+            max-width: 100%;
             border: 1px solid rgba(148, 163, 184, 0.4); /* Distinct subtle slate border */
             border-radius: var(--radius-input); 
             padding: 0.75rem 1rem;
@@ -153,6 +154,7 @@
             background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 36px; cursor: pointer;
             height: 2.875rem; /* pin height equal to text inputs */
             min-height: 2.875rem;
+            max-width: 100%;
         }
         [dir="rtl"] select.ui-input { background-position: left 12px center; padding-right: 1rem; padding-left: 36px; }
 
@@ -248,7 +250,7 @@
         @media (max-width: 1023px) {
             .app-wrapper { overflow-x: hidden; overflow-y: visible; }
             .app-sidebar { overflow: visible; height: auto; }
-            .app-editor { overflow: visible; height: auto; }
+            .app-editor { overflow-y: visible; overflow-x: hidden; height: auto; }
             .app-preview {
                 overflow-x: hidden;
                 overflow-y: visible;
@@ -402,12 +404,29 @@
             }
             .ui-input {
                 width: 100%;
+                max-width: 100%;
                 min-width: 0;
                 box-sizing: border-box;
             }
             /* Force 1-column stacking for form grids inside cards on mobile */
             .ui-card .grid {
                 grid-template-columns: 1fr !important;
+            }
+            /* History filter elements — override fixed/inline widths on mobile */
+            .history-filter-date {
+                width: auto !important;
+                min-width: 0 !important;
+                max-width: 100%;
+                flex: 1 1 auto;
+            }
+            .history-filter-select {
+                min-width: 0 !important;
+                max-width: 100%;
+            }
+            /* Prevent filter rows from overflowing horizontally */
+            .history-filter-row,
+            .history-search-row {
+                overflow-x: hidden;
             }
         }
 
@@ -429,11 +448,22 @@
             min-width: 0;
         }
 
+        /* Grid item containment — ensure direct children of card grids can shrink */
+        .ui-card .grid > *,
+        .ui-inner-box .grid > *,
+        .emp-form-grid > * {
+            min-width: 0;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
         /* Date / month / time inputs — prevent browser intrinsic minimum-width overflow */
         input[type="date"].ui-input,
         input[type="month"].ui-input,
         input[type="time"].ui-input {
             min-width: 0;
+            max-width: 100%;
+            width: 100%;
         }
         input[type="date"].ui-input::-webkit-calendar-picker-indicator,
         input[type="month"].ui-input::-webkit-calendar-picker-indicator,
