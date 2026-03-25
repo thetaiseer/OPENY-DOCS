@@ -8494,48 +8494,7 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             };
         }());
 
-        // ── Sticky export-dock: auto-hide on scroll-down, show on scroll-up ──
-        (function () {
-            const scrollState = new WeakMap();
-            const SCROLL_THRESHOLD = 4;  // px delta to trigger show/hide
-            const TOP_THRESHOLD = 20;    // px from top where dock is always visible
-
-            function onScrollEvent(scroller, pos) {
-                const prev = scrollState.get(scroller) || 0;
-                const delta = pos - prev;
-                scrollState.set(scroller, pos);
-
-                const docks = document.querySelectorAll('.export-dock');
-                if (pos <= TOP_THRESHOLD) {
-                    docks.forEach(d => d.classList.remove('dock-hidden'));
-                } else if (delta > SCROLL_THRESHOLD) {
-                    docks.forEach(d => d.classList.add('dock-hidden'));
-                } else if (delta < -SCROLL_THRESHOLD) {
-                    docks.forEach(d => d.classList.remove('dock-hidden'));
-                }
-            }
-
-            function attachScrollListeners() {
-                // Window scroll (mobile / tablet — window is the scroller)
-                window.addEventListener('scroll', () => {
-                    onScrollEvent(window, window.scrollY || window.pageYOffset);
-                }, { passive: true });
-
-                // Direct listeners on .app-editor and .app-preview (desktop)
-                document.querySelectorAll('.app-editor, .app-preview').forEach(el => {
-                    el.addEventListener('scroll', function () {
-                        onScrollEvent(this, this.scrollTop);
-                    }, { passive: true });
-                });
-            }
-
-            // Attach after DOM is fully ready
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', attachScrollListeners);
-            } else {
-                attachScrollListeners();
-            }
-        }());
+        // ── Export dock: always visible while active (no scroll-based hide) ──
 
     </script>
 </body>
