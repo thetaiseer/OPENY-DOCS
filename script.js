@@ -1588,8 +1588,8 @@
                 wrapper.style.width = '100%';
             }
 
-            // Force DOM reflow to properly calculate multi-page heights
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // Force DOM reflow and ensure Cairo Arabic font is both ready before capture
+            await Promise.all([new Promise(resolve => setTimeout(resolve, 300)), document.fonts.ready]);
 
             const opt = {
                 margin:       12, // Uniform 12mm margin applied via jsPDF natively
@@ -1734,8 +1734,8 @@
                 wrapper.style.width = '100%';
             }
 
-            // Force DOM reflow to properly calculate multi-page heights
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // Force DOM reflow and ensure Cairo Arabic font is both ready before capture
+            await Promise.all([new Promise(resolve => setTimeout(resolve, 300)), document.fonts.ready]);
 
             const opt = {
                 margin:       12, // Uniform 12mm margin applied via jsPDF natively
@@ -3423,7 +3423,8 @@
             let origWrapperTransform = '', origWrapperWidth = '';
             if (wrapper) { origWrapperTransform = wrapper.style.transform; origWrapperWidth = wrapper.style.width; wrapper.style.transform = 'none'; wrapper.style.width = '100%'; }
 
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // Force DOM reflow and ensure Cairo Arabic font is both ready before capture
+            await Promise.all([new Promise(resolve => setTimeout(resolve, 300)), document.fonts.ready]);
 
             const opt = {
                 margin: 12,
@@ -3510,7 +3511,7 @@
                     .ct-sig-party-label { background: #111; color: #fff; font-size: 8pt; font-weight: bold; padding: 3pt 7pt; }
                     .ct-sig-name-line { border-bottom: 1.5pt solid #111; margin: 20pt 0 6pt; }
                     .ct-sig-name-text { font-size: 10pt; font-weight: bold; font-family: ${bodyFont}; }
-                    .arabic-text { font-family: 'Cairo', sans-serif !important; direction: rtl; text-align: right; }
+                    .arabic-text { font-family: 'Cairo', sans-serif !important; direction: rtl; text-align: right; unicode-bidi: embed; }
                 </style>`;
                 const htmlContent = element.innerHTML;
                 const dir = isCtArabic ? 'rtl' : 'ltr';
