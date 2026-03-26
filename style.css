@@ -1264,4 +1264,153 @@
             .emp-toolbar { flex-direction: column; align-items: stretch; }
             .emp-search-wrap { max-width: 100%; }
         }
+
+        /* ============================================================
+           RECTANGLE & ALIGNMENT NORMALIZATION
+           Normalises sizing, spacing, and alignment across all sections
+           (Invoice, Quotation, Client Contract, HR Contract, Employees,
+           History, Filters, Action Buttons).
+           Does NOT redesign – only corrects inconsistencies.
+           ============================================================ */
+
+        /* 1. Universal box-sizing safety net */
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* 2. Section containers: consistent width behaviour */
+        .ui-card,
+        .ui-inner-box,
+        .history-panel,
+        .emp-table-wrap,
+        .emp-stat-card,
+        .employees-full-layout {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        /* 3. Normalize history filter controls to share the same height,
+              border-radius, and box-sizing as the main .ui-input fields */
+        .history-filter-select,
+        .history-filter-date,
+        .history-filter-day,
+        .history-search-input,
+        .history-reset-btn {
+            height: 2.875rem;
+            min-height: 2.875rem;
+            border-radius: var(--radius-input);
+            box-sizing: border-box;
+            min-width: 0;
+        }
+
+        /* Vertically-centre content in the filter controls */
+        .history-filter-select,
+        .history-filter-date,
+        .history-filter-day {
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+        }
+
+        /* 4. Make filter controls flexible (fill available space) instead
+              of relying on now-removed fixed inline width styles */
+        .history-filter-select { flex: 1 1 130px; }
+        .history-filter-date   { flex: 1 1 120px; width: auto; }
+        .history-filter-day    { flex: 0 0 80px; }
+
+        /* 5. Normalize history panel action buttons height */
+        .history-action-btn {
+            height: 2.25rem;
+            min-height: 2.25rem;
+            border-radius: var(--radius-btn);
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* 6. Employee filter selects — match the height of .ui-input */
+        .emp-filter-select {
+            height: 2.875rem;
+            min-height: 2.875rem;
+            box-sizing: border-box;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        /* 7. Chips and pills — consistent internal alignment */
+        .history-pill,
+        .filter-chip,
+        .filter-chip-inv {
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 8. Grid / layout containers: guarantee no horizontal overflow */
+        .ui-card .grid,
+        .ui-inner-box .grid,
+        .emp-form-grid,
+        .history-filter-row,
+        .history-search-row,
+        .emp-toolbar,
+        .emp-filters-row {
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        /* 9. Mobile: full-width stacked layout, no overflow.
+              Applies to all filter rows, toolbars, and form grids. */
+        @media (max-width: 639px) {
+            /* History filter rows — stack vertically, full width each */
+            .history-filter-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+            }
+            .history-filter-row > * {
+                width: 100%;
+                max-width: 100%;
+                min-width: 0;
+                flex: 1 1 auto;
+            }
+
+            /* History search row — stack on narrow screens */
+            .history-search-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .history-status-pills {
+                justify-content: flex-start;
+                flex-wrap: wrap;
+            }
+
+            /* Employee toolbar — stack vertically (extends the 768px rule to 639px) */
+            .emp-search-wrap {
+                max-width: 100%;
+                width: 100%;
+            }
+            .emp-filters-row {
+                flex-direction: column;
+                align-items: stretch;
+                width: 100%;
+            }
+            .emp-filter-select {
+                min-width: 0;
+                max-width: 100%;
+                width: 100%;
+            }
+            .emp-filters-row .ui-button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* History panel header/filter padding consistency on mobile */
+            .history-panel-header,
+            .history-filters,
+            .history-record-list {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+        }
     
