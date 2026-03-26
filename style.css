@@ -534,6 +534,71 @@
             max-height: 1.25rem;
         }
 
+        /* ── Compact date chip ─────────────────────────────────────────────────
+           Metadata-style date fields that shouldn't dominate the form.
+           Keeps native date picker behaviour while reducing visual weight.
+           ───────────────────────────────────────────────────────────────── */
+        input[type="month"].date-chip,
+        input[type="date"].date-chip {
+            width: 190px;
+            max-width: 100%;
+            min-width: 0;
+            height: 2.25rem;
+            min-height: 0;
+            padding: 0 0.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-align: center;
+            background-color: rgba(241, 245, 249, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            border-radius: var(--radius-input);
+            box-shadow: none;
+            letter-spacing: 0.2px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        input[type="month"].date-chip:focus,
+        input[type="date"].date-chip:focus {
+            background-color: #fff;
+            border-color: var(--border-focus);
+            box-shadow: var(--shadow-focus);
+            transform: none;
+        }
+        input[type="month"].date-chip::-webkit-datetime-edit,
+        input[type="date"].date-chip::-webkit-datetime-edit {
+            padding: 0;
+            overflow: hidden;
+        }
+        input[type="month"].date-chip::-webkit-calendar-picker-indicator,
+        input[type="date"].date-chip::-webkit-calendar-picker-indicator {
+            opacity: 0.45;
+            cursor: pointer;
+            max-width: 1rem;
+            max-height: 1rem;
+        }
+        /* Keep chip compact on mobile — override the general !important rules */
+        @media (max-width: 639px) {
+            input[type="month"].date-chip,
+            input[type="date"].date-chip {
+                width: 190px !important;
+                max-width: 100% !important;
+                min-width: 0 !important;
+                height: 2.25rem !important;
+            }
+        }
+        /* Dark mode — lighter chip background */
+        [data-theme="dark"] input[type="month"].date-chip,
+        [data-theme="dark"] input[type="date"].date-chip {
+            background: rgba(44, 44, 46, 0.7) !important;
+            border-color: rgba(255, 255, 255, 0.12) !important;
+        }
+        [data-theme="dark"] input[type="month"].date-chip:focus,
+        [data-theme="dark"] input[type="date"].date-chip:focus {
+            background: #2c2c2e !important;
+            border-color: #0a84ff !important;
+            box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.25) !important;
+        }
+
         /* Cards that stack form groups vertically (no grid) should still have
            a consistent gap between them */
         .ui-card > .ui-form-group:not(:last-child) {
