@@ -2344,55 +2344,47 @@
             color: #000000 !important;
         }
 
-        /* 2. Override all dark mode text color rules (including the Tailwind-class overrides
-              added above) so the document preview always shows print-safe colors.
-              Uses !important + higher specificity (0,2,0) vs (0,2,0) same specificity
-              but this rule is declared AFTER the Tailwind overrides so it wins the cascade. */
+        /* 2. Cancel the dark-mode all-elements wildcard (no !important here).
+              [data-theme="dark"] .a4-page * has specificity (0,2,0) which
+              beats [data-theme="dark"] * at (0,1,0), so the wildcard is
+              cancelled without needing !important. Inline styles (1,0,0,0)
+              still win, preserving intentional white-on-dark styled elements. */
         [data-theme="dark"] .a4-page *,
         .dark .a4-page * {
-            color: inherit !important;
+            color: #000000;
         }
 
-        /* 3. Override dark mode !important rules for table elements.
-              Uses !important + higher specificity (0,2,1) vs (0,1,1).
-              "inherit" walks up the DOM: for header rows the parent <tr>
-              already carries color:#fff via inline style, so white text is
-              preserved; for body rows the chain reaches .a4-page (black). */
+        /* 3. Cancel dark-mode !important overrides for specific element types.
+              Specificity (0,2,1) beats dark-mode rules at (0,1,1).
+              Using explicit #000000 avoids inherit-chain issues. */
         [data-theme="dark"] .a4-page table,
         [data-theme="dark"] .a4-page th,
         [data-theme="dark"] .a4-page td,
-        .dark .a4-page table,
-        .dark .a4-page th,
-        .dark .a4-page td {
-            color: inherit !important;
-            border-color: inherit !important;
-        }
-
-        /* 4. Override dark mode !important color rules for headings */
         [data-theme="dark"] .a4-page h1,
         [data-theme="dark"] .a4-page h2,
         [data-theme="dark"] .a4-page h3,
         [data-theme="dark"] .a4-page h4,
         [data-theme="dark"] .a4-page h5,
         [data-theme="dark"] .a4-page h6,
+        [data-theme="dark"] .a4-page label,
+        [data-theme="dark"] .a4-page button,
+        .dark .a4-page table,
+        .dark .a4-page th,
+        .dark .a4-page td,
         .dark .a4-page h1,
         .dark .a4-page h2,
         .dark .a4-page h3,
         .dark .a4-page h4,
         .dark .a4-page h5,
-        .dark .a4-page h6 {
-            color: inherit !important;
+        .dark .a4-page h6,
+        .dark .a4-page label,
+        .dark .a4-page button {
+            color: #000000 !important;
+            border-color: #000000 !important;
         }
 
-        /* 5. Override dark mode !important color rules for labels */
-        [data-theme="dark"] .a4-page label,
-        .dark .a4-page label {
-            color: inherit !important;
-        }
-
-        /* 6. Restore intentional white-on-dark elements (CSS class based).
-              These are specific document elements that deliberately use a
-              black background with white text and must keep those colors. */
+        /* 4. Restore intentional white-on-dark elements (CSS class based).
+              Specificity (0,3,0) with !important beats rule 3 above. */
         [data-theme="dark"] .a4-page .block-label:not(.light),
         [data-theme="dark"] .a4-page .services-table th,
         [data-theme="dark"] .a4-page .total-box,
@@ -2413,39 +2405,14 @@
             color: #ffffff !important;
         }
 
-        /* ===================================================================
-           .document-preview — dedicated always-light class
-           Applied to every .a4-page so the document preview always renders
-           as a print-ready white document, identical in light AND dark mode.
-           Dark mode applies ONLY to the app UI; never to this container.
-           =================================================================== */
-        .document-preview {
-            background: #ffffff !important;
-            color: #000000 !important;
-            /* Remove any glass / blur / opacity effects */
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            opacity: 1 !important;
-        }
-
-        /* Force all child elements to use black text and transparent
-           backgrounds so the parent white surface always shows through. */
-        .document-preview * {
-            color: #000 !important;
-            background-color: transparent !important;
-        }
-
-        /* Restore intentional white-on-dark document elements:
-           block labels, table headers, total boxes, contract labels, etc.
-           These are print-safe by design and must keep their dark style. */
-        .document-preview .block-label:not(.light),
-        .document-preview .services-table th,
-        .document-preview .total-box,
-        .document-preview .ct-section-label,
-        .document-preview .ct-party-header,
-        .document-preview .ct-clause-num,
-        .document-preview .ct-sig-party-label,
-        .document-preview .ct-financial-total {
-            background-color: #111111 !important;
+        /* 5. Restore intentional white-on-dark elements (inline-style based).
+              Targets elements with a black (#111) background set via inline
+              style, e.g. total-amount rows and header rows in generated tables.
+              Both spacing variants are covered for robustness.
+              Specificity (0,3,0) with !important beats rule 3 above. */
+        [data-theme="dark"] .a4-page [style*="background: #111"],
+        [data-theme="dark"] .a4-page [style*="background:#111"],
+        .dark .a4-page [style*="background: #111"],
+        .dark .a4-page [style*="background:#111"] {
             color: #ffffff !important;
         }
