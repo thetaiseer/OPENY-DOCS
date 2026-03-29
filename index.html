@@ -1745,12 +1745,9 @@
             <div class="emp-toolbar">
                 <div class="emp-search-wrap">
                     <svg class="emp-search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                    <input type="text" id="emp-search" class="ui-input emp-search-input" placeholder="Search by name, ID, title, department…" oninput="window.renderEmployeesList()">
+                    <input type="text" id="emp-search" class="ui-input emp-search-input" placeholder="Search by name, ID, title, phone…" oninput="window.renderEmployeesList()">
                 </div>
                 <div class="emp-filters-row">
-                    <select id="emp-filter-dept" class="ui-input emp-filter-select" onchange="window.renderEmployeesList()">
-                        <option value="">All Departments</option>
-                    </select>
                     <select id="emp-filter-status" class="ui-input emp-filter-select" onchange="window.renderEmployeesList()">
                         <option value="">All Statuses</option>
                         <option value="Active">Active</option>
@@ -1765,8 +1762,6 @@
                         <option value="Full-time">Full-time</option>
                         <option value="Part-time">Part-time</option>
                         <option value="Freelance">Freelance</option>
-                        <option value="Contract">Contract</option>
-                        <option value="Temporary">Temporary</option>
                     </select>
                     <button class="ui-button ui-button-primary" onclick="window.openAddEmployeeModal()">
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;display:inline;margin-right:4px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
@@ -1880,17 +1875,14 @@
                         <thead>
                             <tr>
                                 <th>Employee</th>
-                                <th>Department</th>
                                 <th>Job Title</th>
+                                <th>Employment Type</th>
                                 <th>Status</th>
-                                <th>Base Salary</th>
-                                <th>Allowances</th>
-                                <th>Bonuses</th>
-                                <th>Monthly Cost</th>
+                                <th>Salary</th>
                             </tr>
                         </thead>
                         <tbody id="pr-breakdown-body">
-                            <tr><td colspan="8" class="emp-empty-state" style="text-align:center;padding:24px;">No employees found.</td></tr>
+                            <tr><td colspan="5" class="emp-empty-state" style="text-align:center;padding:24px;">No employees found.</td></tr>
                         </tbody>
                         <tfoot id="pr-breakdown-foot"></tfoot>
                     </table>
@@ -1927,34 +1919,12 @@
                         <input type="text" id="ef-employeeId" class="ui-input" placeholder="EMP-001 (auto-generated)">
                     </div>
                     <div class="ui-form-group mb-0">
-                        <label class="ui-label">National ID / Passport</label>
-                        <input type="text" id="ef-nationalId" class="ui-input" placeholder="National ID or passport">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Phone</label>
-                        <input type="text" id="ef-phone" class="ui-input" placeholder="+20 1XX XXXX XXX">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Email</label>
-                        <input type="email" id="ef-email" class="ui-input" placeholder="employee@company.com">
-                    </div>
-                    <div class="ui-form-group mb-0">
                         <label class="ui-label">Date of Birth</label>
                         <input type="date" id="ef-dob" class="ui-input">
                     </div>
                     <div class="ui-form-group mb-0">
-                        <label class="ui-label">Nationality</label>
-                        <input type="text" id="ef-nationality" class="ui-input" placeholder="e.g. Egyptian">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Marital Status</label>
-                        <select id="ef-maritalStatus" class="ui-input">
-                            <option value="">-- Select --</option>
-                            <option value="Single">Single</option>
-                            <option value="Married">Married</option>
-                            <option value="Divorced">Divorced</option>
-                            <option value="Widowed">Widowed</option>
-                        </select>
+                        <label class="ui-label">Phone Number</label>
+                        <input type="text" id="ef-phone" class="ui-input" placeholder="+20 1XX XXXX XXX">
                     </div>
                     <div class="ui-form-group mb-0 col-span-2">
                         <label class="ui-label">Address</label>
@@ -1970,22 +1940,11 @@
                         <input type="text" id="ef-jobTitle" class="ui-input" placeholder="e.g. Marketing Manager">
                     </div>
                     <div class="ui-form-group mb-0">
-                        <label class="ui-label">Department <span class="text-red-500">*</span></label>
-                        <input type="text" id="ef-department" class="ui-input" placeholder="e.g. Marketing" list="emp-dept-datalist">
-                        <datalist id="emp-dept-datalist"></datalist>
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Direct Manager</label>
-                        <input type="text" id="ef-manager" class="ui-input" placeholder="Manager name">
-                    </div>
-                    <div class="ui-form-group mb-0">
                         <label class="ui-label">Employment Type</label>
                         <select id="ef-employmentType" class="ui-input">
                             <option value="Full-time">Full-time</option>
                             <option value="Part-time">Part-time</option>
                             <option value="Freelance">Freelance</option>
-                            <option value="Contract">Contract</option>
-                            <option value="Temporary">Temporary</option>
                         </select>
                     </div>
                     <div class="ui-form-group mb-0">
@@ -2004,89 +1963,22 @@
                         </select>
                     </div>
                     <div class="ui-form-group mb-0">
-                        <label class="ui-label">Work Location</label>
-                        <input type="text" id="ef-workLocation" class="ui-input" placeholder="Office / Remote / Hybrid">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Probation Period (months)</label>
-                        <input type="number" id="ef-probation" class="ui-input" placeholder="3" min="0">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Work Days / Week</label>
-                        <input type="text" id="ef-workDays" class="ui-input" placeholder="5 days / Sun-Thu">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Daily Hours</label>
+                        <label class="ui-label">Daily Working Hours</label>
                         <input type="number" id="ef-dailyHours" class="ui-input" placeholder="8" min="1" max="24">
                     </div>
-                </div>
-
-                <!-- Salary Info -->
-                <div class="emp-form-section-title" style="margin-top:1.25rem;">Salary Info</div>
-                <div class="emp-form-grid">
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Current Salary <span class="text-red-500">*</span></label>
-                        <input type="number" id="ef-currentSalary" class="ui-input" placeholder="0.00" min="0" step="0.01">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Currency</label>
-                        <select id="ef-currency" class="ui-input">
-                            <option value="EGP">EGP — Egyptian Pound</option>
-                            <option value="SAR">SAR — Saudi Riyal</option>
-                            <option value="AED">AED — UAE Dirham</option>
-                            <option value="USD">USD — US Dollar</option>
-                            <option value="EUR">EUR — Euro</option>
-                            <option value="GBP">GBP — British Pound</option>
-                        </select>
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Payment Method</label>
-                        <select id="ef-paymentMethod" class="ui-input">
-                            <option value="Bank Transfer">Bank Transfer</option>
-                            <option value="Cash">Cash</option>
-                            <option value="Cheque">Cheque</option>
-                        </select>
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Payroll Cycle</label>
-                        <select id="ef-payrollCycle" class="ui-input">
-                            <option value="Monthly">Monthly</option>
-                            <option value="Bi-weekly">Bi-weekly</option>
-                            <option value="Weekly">Weekly</option>
-                        </select>
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Allowances</label>
-                        <input type="number" id="ef-allowances" class="ui-input" placeholder="0.00" min="0" step="0.01">
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Bonuses</label>
-                        <input type="number" id="ef-bonuses" class="ui-input" placeholder="0.00" min="0" step="0.01">
-                    </div>
-                </div>
-
-                <!-- Contract Info -->
-                <div class="emp-form-section-title" style="margin-top:1.25rem;">Linked HR Contract (optional)</div>
-                <div class="emp-form-grid">
                     <div class="ui-form-group mb-0">
                         <label class="ui-label">Contract Duration (months)</label>
                         <input type="number" id="ef-contractDuration" class="ui-input" placeholder="e.g. 12" min="0">
                     </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Contract ID / Reference</label>
-                        <input type="text" id="ef-linkedContractId" class="ui-input" placeholder="Search contract number…" list="emp-contract-datalist" oninput="window.onContractSearch(this.value)">
-                        <datalist id="emp-contract-datalist"></datalist>
-                    </div>
-                    <div class="ui-form-group mb-0">
-                        <label class="ui-label">Contract Number</label>
-                        <input type="text" id="ef-linkedContractNumber" class="ui-input" placeholder="EC-2025-001" readonly>
-                    </div>
                 </div>
 
-                <!-- Salary adjustment note (shown only on add) -->
-                <div id="ef-salary-note-wrap" class="ui-form-group mb-0" style="margin-top:1rem;">
-                    <label class="ui-label">Initial Salary Note</label>
-                    <input type="text" id="ef-salaryNote" class="ui-input" placeholder="e.g. Starting salary at hire">
+                <!-- Salary -->
+                <div class="emp-form-section-title" style="margin-top:1.25rem;">Salary</div>
+                <div class="emp-form-grid">
+                    <div class="ui-form-group mb-0">
+                        <label class="ui-label">Salary <span class="text-red-500">*</span></label>
+                        <input type="number" id="ef-currentSalary" class="ui-input" placeholder="0.00" min="0" step="0.01">
+                    </div>
                 </div>
             </div>
             <div class="emp-modal-footer">

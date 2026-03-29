@@ -4354,28 +4354,11 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
         window.renderEmployeesList = function() {
             const employees = localStore.getAll('employees');
             const search = (document.getElementById('emp-search')?.value || '').toLowerCase();
-            const filterDept = document.getElementById('emp-filter-dept')?.value || '';
             const filterStatus = document.getElementById('emp-filter-status')?.value || '';
             const filterType = document.getElementById('emp-filter-type')?.value || '';
 
-            // Populate dept filter
-            const deptSelect = document.getElementById('emp-filter-dept');
-            if (deptSelect) {
-                const depts = [...new Set(employees.map(e => e.department).filter(Boolean))].sort();
-                const currentVal = deptSelect.value;
-                deptSelect.innerHTML = '<option value="">All Departments</option>' + depts.map(d => `<option value="${d}"${d === currentVal ? ' selected' : ''}>${d}</option>`).join('');
-            }
-
-            // Populate dept datalist for form
-            const datalist = document.getElementById('emp-dept-datalist');
-            if (datalist) {
-                const depts = [...new Set(employees.map(e => e.department).filter(Boolean))].sort();
-                datalist.innerHTML = depts.map(d => `<option value="${d}">`).join('');
-            }
-
             let filtered = employees.filter(e => {
-                if (search && !`${e.fullName} ${e.employeeId} ${e.jobTitle} ${e.department} ${e.phone} ${e.email}`.toLowerCase().includes(search)) return false;
-                if (filterDept && e.department !== filterDept) return false;
+                if (search && !`${e.fullName} ${e.employeeId} ${e.jobTitle} ${e.phone}`.toLowerCase().includes(search)) return false;
                 if (filterStatus && e.status !== filterStatus) return false;
                 if (filterType && e.employmentType !== filterType) return false;
                 return true;
@@ -4496,67 +4479,41 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             const tbody2 = document.getElementById('pr-breakdown-body');
             const tfoot = document.getElementById('pr-breakdown-foot');
             if (tbody2) {
-                // Show all employees sorted by active first, then by department then name; archived/inactive shown for history
                 const inactiveStatuses = ['Inactive', 'Archived', 'Resigned', 'Terminated'];
                 const payrollEmps = [...employees]
                     .sort((a, b) => {
                         const aInactive = inactiveStatuses.includes(a.status);
                         const bInactive = inactiveStatuses.includes(b.status);
                         if (aInactive !== bInactive) return aInactive ? 1 : -1;
-                        const dCmp = (a.department || '').localeCompare(b.department || '');
-                        return dCmp !== 0 ? dCmp : (a.fullName || '').localeCompare(b.fullName || '');
+                        return (a.fullName || '').localeCompare(b.fullName || '');
                     });
                 if (payrollEmps.length === 0) {
-                    tbody2.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:24px;color:#94A3B8;">No employees found.</td></tr>';
+                    tbody2.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#94A3B8;">No employees found.</td></tr>';
                     if (tfoot) tfoot.innerHTML = '';
                 } else {
-                    // Only Active employees contribute to currency totals (payroll)
-                    const currencyTotals = {};
+                    let activeTotal = 0;
+                    let activeCount = 0;
                     tbody2.innerHTML = payrollEmps.map(e => {
-                        const base = parseFloat(e.currentSalary) || 0;
-                        const allowances = parseFloat(e.allowances) || 0;
-                        const bonuses = parseFloat(e.bonuses) || 0;
-                        const monthlyCost = base + allowances + bonuses;
-                        const cur = e.currency || 'EGP';
+                        const salary = parseFloat(e.currentSalary) || 0;
                         const isActive = e.status === 'Active';
-                        if (isActive) {
-                            if (!currencyTotals[cur]) currencyTotals[cur] = { base: 0, allowances: 0, bonuses: 0, cost: 0, count: 0 };
-                            currencyTotals[cur].base += base;
-                            currencyTotals[cur].allowances += allowances;
-                            currencyTotals[cur].bonuses += bonuses;
-                            currencyTotals[cur].cost += monthlyCost;
-                            currencyTotals[cur].count++;
-                        }
+                        if (isActive) { activeTotal += salary; activeCount++; }
                         return `<tr style="${!isActive ? 'opacity:0.5;text-decoration:line-through;' : ''}">
                             <td class="emp-name">${e.fullName}</td>
-                            <td>${e.department || '—'}</td>
                             <td>${e.jobTitle || '—'}</td>
+                            <td>${e.employmentType || '—'}</td>
                             <td>${empStatusBadge(e.status)}</td>
-                            <td style="font-weight:600;">${isActive ? empFmtCurrency(base, cur) : '—'}</td>
-                            <td style="color:#059669;">${isActive && allowances > 0 ? empFmtCurrency(allowances, cur) : '—'}</td>
-                            <td style="color:#7C3AED;">${isActive && bonuses > 0 ? empFmtCurrency(bonuses, cur) : '—'}</td>
-                            <td style="font-weight:800;color:#0F172A;">${isActive ? empFmtCurrency(monthlyCost, cur) : '—'}</td>
+                            <td style="font-weight:600;">${isActive ? empFmtCurrency(salary, e.currency) : '—'}</td>
                         </tr>`;
                     }).join('');
                     if (tfoot) {
-                        const activeCurrencies = Object.keys(currencyTotals);
-                        const activeCount = active.length;
-                        if (activeCurrencies.length === 0) {
-                            tfoot.innerHTML = `<tr style="background:#F8FAFC;border-top:2px solid #E2E8F0;"><td colspan="8" style="font-weight:700;color:#94A3B8;padding:10px 12px;">No active employees in payroll</td></tr>`;
+                        if (activeCount === 0) {
+                            tfoot.innerHTML = `<tr style="background:#F8FAFC;border-top:2px solid #E2E8F0;"><td colspan="5" style="font-weight:700;color:#94A3B8;padding:10px 12px;">No active employees in payroll</td></tr>`;
                         } else {
-                            tfoot.innerHTML = activeCurrencies.map((cur, i) => {
-                                const t = currencyTotals[cur];
-                                const label = activeCurrencies.length > 1
-                                    ? `Active Payroll Total — ${cur} (${t.count} active employee${t.count !== 1 ? 's' : ''})`
-                                    : `Active Payroll Total (${activeCount} active employee${activeCount !== 1 ? 's' : ''})`;
-                                return `<tr style="background:#F0FDF4;border-top:${i === 0 ? '2px' : '1px'} solid #BBF7D0;">
-                                    <td colspan="4" style="font-weight:700;color:#065F46;padding:10px 12px;">${label}</td>
-                                    <td style="font-weight:700;color:#065F46;">${empFmtCurrency(t.base, cur)}</td>
-                                    <td style="font-weight:700;color:#059669;">${empFmtCurrency(t.allowances, cur)}</td>
-                                    <td style="font-weight:700;color:#7C3AED;">${empFmtCurrency(t.bonuses, cur)}</td>
-                                    <td style="font-weight:800;color:#059669;">${empFmtCurrency(t.cost, cur)}</td>
-                                </tr>`;
-                            }).join('');
+                            tfoot.innerHTML = `<tr style="background:#F0FDF4;border-top:2px solid #BBF7D0;">
+                                <td colspan="3" style="font-weight:700;color:#065F46;padding:10px 12px;">Active Payroll Total (${activeCount} active employee${activeCount !== 1 ? 's' : ''})</td>
+                                <td></td>
+                                <td style="font-weight:800;color:#059669;">${empFmtCurrency(activeTotal, active[0]?.currency || 'EGP')}</td>
+                            </tr>`;
                         }
                     }
                 }
@@ -4569,27 +4526,17 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             document.getElementById('emp-form-modal-title').textContent = 'Add Employee';
             document.getElementById('emp-form-id').value = '';
             // Reset fields
-            ['ef-fullName','ef-employeeId','ef-nationalId','ef-phone','ef-email','ef-dob','ef-nationality','ef-address',
-             'ef-jobTitle','ef-department','ef-manager','ef-workLocation','ef-probation','ef-workDays','ef-dailyHours',
-             'ef-currentSalary','ef-allowances','ef-bonuses','ef-linkedContractId','ef-linkedContractNumber','ef-contractDuration','ef-salaryNote'].forEach(id => {
+            ['ef-fullName','ef-employeeId','ef-phone','ef-dob','ef-address',
+             'ef-jobTitle','ef-dailyHours','ef-currentSalary','ef-contractDuration'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.value = '';
             });
-            document.getElementById('ef-maritalStatus').value = '';
             document.getElementById('ef-employmentType').value = 'Full-time';
             document.getElementById('ef-status').value = 'Active';
-            document.getElementById('ef-currency').value = 'EGP';
-            document.getElementById('ef-paymentMethod').value = 'Bank Transfer';
-            document.getElementById('ef-payrollCycle').value = 'Monthly';
             document.getElementById('ef-hireDate').value = new Date().toISOString().split('T')[0];
             // Auto-generate ID
             const existing = localStore.getAll('employees');
             document.getElementById('ef-employeeId').value = empGenerateId(existing);
-            // Show salary note for new employee
-            const noteWrap = document.getElementById('ef-salary-note-wrap');
-            if (noteWrap) noteWrap.style.display = '';
-            // Populate contract datalist
-            _populateContractDatalist();
             document.getElementById('emp-form-modal').classList.remove('hidden');
         };
 
@@ -4603,36 +4550,16 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             const sv = (fId, val) => { const el = document.getElementById(fId); if (el) el.value = val || ''; };
             sv('ef-fullName', emp.fullName);
             sv('ef-employeeId', emp.employeeId);
-            sv('ef-nationalId', emp.nationalId);
             sv('ef-phone', emp.phone);
-            sv('ef-email', emp.email);
             sv('ef-dob', emp.dob);
-            sv('ef-nationality', emp.nationality);
-            sv('ef-maritalStatus', emp.maritalStatus);
             sv('ef-address', emp.address);
             sv('ef-jobTitle', emp.jobTitle);
-            sv('ef-department', emp.department);
-            sv('ef-manager', emp.manager);
             sv('ef-employmentType', emp.employmentType);
             sv('ef-hireDate', emp.hireDate);
             sv('ef-status', emp.status);
-            sv('ef-workLocation', emp.workLocation);
-            sv('ef-probation', emp.probation);
-            sv('ef-workDays', emp.workDays);
             sv('ef-dailyHours', emp.dailyHours);
-            sv('ef-currentSalary', emp.currentSalary);
-            sv('ef-currency', emp.currency);
-            sv('ef-paymentMethod', emp.paymentMethod);
-            sv('ef-payrollCycle', emp.payrollCycle);
-            sv('ef-allowances', emp.allowances);
-            sv('ef-bonuses', emp.bonuses);
-            sv('ef-linkedContractId', emp.linkedContractId);
-            sv('ef-linkedContractNumber', emp.linkedContractNumber);
             sv('ef-contractDuration', emp.contractDuration);
-            // Hide salary note on edit (use salary adjustment for that)
-            const noteWrap = document.getElementById('ef-salary-note-wrap');
-            if (noteWrap) noteWrap.style.display = 'none';
-            _populateContractDatalist();
+            sv('ef-currentSalary', emp.currentSalary);
             document.getElementById('emp-form-modal').classList.remove('hidden');
         };
 
@@ -4659,32 +4586,16 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
                 id,
                 employeeId: document.getElementById('ef-employeeId').value.trim(),
                 fullName,
-                nationalId: document.getElementById('ef-nationalId').value.trim(),
                 phone: document.getElementById('ef-phone').value.trim(),
-                email: document.getElementById('ef-email').value.trim(),
                 dob: document.getElementById('ef-dob').value,
-                nationality: document.getElementById('ef-nationality').value.trim(),
-                maritalStatus: document.getElementById('ef-maritalStatus').value,
                 address: document.getElementById('ef-address').value.trim(),
                 jobTitle: document.getElementById('ef-jobTitle').value.trim(),
-                department: document.getElementById('ef-department').value.trim(),
-                manager: document.getElementById('ef-manager').value.trim(),
                 employmentType: document.getElementById('ef-employmentType').value,
                 hireDate,
                 status: document.getElementById('ef-status').value,
-                workLocation: document.getElementById('ef-workLocation').value.trim(),
-                probation: document.getElementById('ef-probation').value,
-                workDays: document.getElementById('ef-workDays').value.trim(),
                 dailyHours: document.getElementById('ef-dailyHours').value,
-                currentSalary,
-                currency: document.getElementById('ef-currency').value,
-                paymentMethod: document.getElementById('ef-paymentMethod').value,
-                payrollCycle: document.getElementById('ef-payrollCycle').value,
-                allowances: parseFloat(document.getElementById('ef-allowances').value) || 0,
-                bonuses: parseFloat(document.getElementById('ef-bonuses').value) || 0,
-                linkedContractId: document.getElementById('ef-linkedContractId').value.trim(),
-                linkedContractNumber: document.getElementById('ef-linkedContractNumber').value.trim(),
                 contractDuration: parseInt(document.getElementById('ef-contractDuration').value, 10) || 0,
+                currentSalary,
                 updatedAt: new Date().toISOString(),
                 createdAt: isNew ? new Date().toISOString() : (oldEmpRecord?.createdAt || new Date().toISOString()),
                 hiredAt: isNew ? new Date().toISOString() : (oldEmpRecord?.hiredAt || null)
@@ -4704,7 +4615,6 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
 
             // If new employee and salary > 0, create initial salary history entry
             if (isNew && currentSalary > 0) {
-                const note = document.getElementById('ef-salaryNote').value.trim() || 'Starting salary at hire';
                 const sh = {
                     id: 'sh-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
                     employeeId: id,
@@ -4713,7 +4623,7 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
                     changeAmount: currentSalary,
                     changeType: 'Increase',
                     effectiveDate: hireDate,
-                    note,
+                    note: 'Starting salary at hire',
                     createdAt: new Date().toISOString()
                 };
                 await cloudDB.put(sh, 'salaryHistory');
@@ -4771,28 +4681,6 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
 
             const pf = (label, val) => `<div class="emp-profile-field"><label>${label}</label><p>${val || '—'}</p></div>`;
 
-            let contractSection = '';
-            if (emp.linkedContractNumber) {
-                contractSection = `
-                    <div class="emp-profile-field col-span-2">
-                        <label>Linked Contract</label>
-                        <p style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                            <span class="emp-contract-linked"
-                                onclick="window.openLinkedContract('${emp.linkedContractId || ''}', '${id}')"
-                                title="View & Download HR Contract">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:13px;height:13px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                                ${emp.linkedContractNumber}
-                            </span>
-                            <button onclick="window.openLinkedContract('${emp.linkedContractId || ''}', '${id}')" class="ui-button" style="font-size:0.75rem;padding:3px 10px;background:rgba(37,99,235,0.08);color:#2563EB;border:1px solid rgba(37,99,235,0.2);">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:12px;height:12px;display:inline;margin-right:3px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                                View / Download
-                            </button>
-                        </p>
-                    </div>`;
-            } else {
-                contractSection = `<div class="emp-profile-field col-span-2"><label>Linked Contract</label><p class="emp-no-contract">No contract linked</p></div>`;
-            }
-
             const content = document.getElementById('emp-profile-content');
             if (content) {
                 content.innerHTML = `
@@ -4801,7 +4689,7 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
                         <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#2563EB);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.25rem;font-weight:800;flex-shrink:0;">${empInitials(emp.fullName)}</div>
                         <div>
                             <div style="font-size:1.15rem;font-weight:800;color:#0F172A;">${emp.fullName}</div>
-                            <div style="font-size:0.83rem;color:#64748B;">${emp.jobTitle || ''}${emp.department ? ' · ' + emp.department : ''}</div>
+                            <div style="font-size:0.83rem;color:#64748B;">${emp.jobTitle || ''}</div>
                             <div style="margin-top:4px;">${empStatusBadge(emp.status)} <span style="font-size:0.75rem;color:#94A3B8;margin-left:6px;">ID: ${emp.employeeId || '—'}</span></div>
                         </div>
                     </div>
@@ -4810,12 +4698,8 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
                     <div class="emp-profile-section">
                         <div class="emp-profile-section-title">Basic Info</div>
                         <div class="emp-profile-grid">
-                            ${pf('Phone', emp.phone)}
-                            ${pf('Email', emp.email)}
-                            ${pf('Nationality', emp.nationality)}
-                            ${pf('Marital Status', emp.maritalStatus)}
+                            ${pf('Phone Number', emp.phone)}
                             ${pf('Date of Birth', empFmtDate(emp.dob))}
-                            ${pf('National ID', emp.nationalId)}
                             <div class="emp-profile-field col-span-2">${pf('Address', emp.address)}</div>
                         </div>
                     </div>
@@ -4825,35 +4709,21 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
                         <div class="emp-profile-section-title">Job Info</div>
                         <div class="emp-profile-grid">
                             ${pf('Job Title', emp.jobTitle)}
-                            ${pf('Department', emp.department)}
-                            ${pf('Direct Manager', emp.manager)}
                             ${pf('Employment Type', emp.employmentType)}
                             ${pf('Hire Date', empFmtDate(emp.hireDate))}
-                            ${pf('Probation Period', emp.probation ? emp.probation + ' months' : '—')}
-                            ${pf('Work Location', emp.workLocation)}
-                            ${pf('Work Days', emp.workDays)}
-                            ${pf('Daily Hours', emp.dailyHours ? emp.dailyHours + ' hrs' : '—')}
+                            ${pf('Status', emp.status)}
+                            ${pf('Daily Working Hours', emp.dailyHours ? emp.dailyHours + ' hrs' : '—')}
+                            ${pf('Contract Duration', emp.contractDuration ? emp.contractDuration + ' months' : '—')}
                         </div>
                     </div>
 
-                    <!-- Salary Info -->
+                    <!-- Salary -->
                     <div class="emp-profile-section">
-                        <div class="emp-profile-section-title">Salary Info</div>
+                        <div class="emp-profile-section-title">Salary</div>
                         <div class="emp-profile-grid">
-                            ${pf('Current Salary', `<strong style="font-size:1.05rem;">${empFmtCurrency(emp.currentSalary, emp.currency)}</strong>`)}
-                            ${pf('Currency', emp.currency)}
-                            ${pf('Payment Method', emp.paymentMethod)}
-                            ${pf('Payroll Cycle', emp.payrollCycle)}
-                            ${pf('Allowances', empFmtCurrency(emp.allowances, emp.currency))}
-                            ${pf('Bonuses', empFmtCurrency(emp.bonuses, emp.currency))}
+                            ${pf('Salary', `<strong style="font-size:1.05rem;">${empFmtCurrency(emp.currentSalary, emp.currency)}</strong>`)}
                             ${pf('Last Updated', empFmtDate(emp.updatedAt?.split('T')[0]))}
                         </div>
-                    </div>
-
-                    <!-- Contract Info -->
-                    <div class="emp-profile-section">
-                        <div class="emp-profile-section-title">Contract Info</div>
-                        <div class="emp-profile-grid">${contractSection}</div>
                     </div>
 
                     <!-- Activity Timeline -->
@@ -4991,27 +4861,18 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             const employees = localStore.getAll('employees');
             const payrollEmps = [...employees]
                 .filter(e => e.status === 'Active')
-                .sort((a, b) => {
-                    const dCmp = (a.department || '').localeCompare(b.department || '');
-                    return dCmp !== 0 ? dCmp : (a.fullName || '').localeCompare(b.fullName || '');
-                });
+                .sort((a, b) => (a.fullName || '').localeCompare(b.fullName || ''));
             if (payrollEmps.length === 0) { showToast('No active employees to export.'); return; }
-            const header = ['Employee ID', 'Full Name', 'Department', 'Job Title', 'Status', 'Currency', 'Base Salary', 'Allowances', 'Bonuses', 'Total Monthly Cost'];
+            const header = ['Employee ID', 'Full Name', 'Job Title', 'Employment Type', 'Status', 'Salary'];
             const rows = payrollEmps.map(e => {
-                const base = parseFloat(e.currentSalary) || 0;
-                const allowances = parseFloat(e.allowances) || 0;
-                const bonuses = parseFloat(e.bonuses) || 0;
+                const salary = parseFloat(e.currentSalary) || 0;
                 return [
                     e.employeeId || '',
                     e.fullName || '',
-                    e.department || '',
                     e.jobTitle || '',
+                    e.employmentType || '',
                     e.status || '',
-                    e.currency || 'EGP',
-                    base.toFixed(2),
-                    allowances.toFixed(2),
-                    bonuses.toFixed(2),
-                    (base + allowances + bonuses).toFixed(2)
+                    salary.toFixed(2)
                 ];
             });
             const csv = [header, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
