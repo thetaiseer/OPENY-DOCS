@@ -4569,11 +4569,38 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
         };
 
         window.saveEmployee = async function() {
-            const fullName = document.getElementById('ef-fullName').value.trim();
-            if (!fullName) { showToast('Full Name is required.'); return; }
-            const hireDate = document.getElementById('ef-hireDate').value;
-            if (!hireDate) { showToast('Hire Date is required.'); return; }
-            const currentSalary = parseFloat(document.getElementById('ef-currentSalary').value) || 0;
+            // Collect all field values upfront
+            const fullName        = document.getElementById('ef-fullName').value.trim();
+            const jobTitle        = document.getElementById('ef-jobTitle').value.trim();
+            const employmentType  = document.getElementById('ef-employmentType').value;
+            const dob             = document.getElementById('ef-dob').value;
+            const phone           = document.getElementById('ef-phone').value.trim();
+            const employeeId      = document.getElementById('ef-employeeId').value.trim();
+            const address         = document.getElementById('ef-address').value.trim();
+            const hireDate        = document.getElementById('ef-hireDate').value;
+            const contractDur     = document.getElementById('ef-contractDuration').value;
+            const status          = document.getElementById('ef-status').value;
+            const dailyHours      = document.getElementById('ef-dailyHours').value;
+            const salaryRaw       = document.getElementById('ef-currentSalary').value;
+
+            // Validate all required fields
+            if (!fullName)       { showToast('Full Name is required.'); return; }
+            if (!jobTitle)       { showToast('Job Title is required.'); return; }
+            if (!employmentType) { showToast('Employment Type is required.'); return; }
+            if (!dob)            { showToast('Date of Birth is required.'); return; }
+            if (!phone)          { showToast('Phone Number is required.'); return; }
+            if (!employeeId)     { showToast('Employee ID is required.'); return; }
+            if (!address)        { showToast('Address is required.'); return; }
+            if (!hireDate)       { showToast('Hire Date is required.'); return; }
+            if (contractDur === '' || contractDur === null || contractDur === undefined) { showToast('Contract Duration is required.'); return; }
+            if (!status)         { showToast('Status is required.'); return; }
+            if (dailyHours === '' || dailyHours === null || dailyHours === undefined) { showToast('Daily Working Hours is required.'); return; }
+            if (salaryRaw === '' || salaryRaw === null || salaryRaw === undefined) {
+                showToast('Salary is required.'); return;
+            }
+
+            const currentSalary   = parseFloat(salaryRaw) || 0;
+            const contractDuration = parseInt(contractDur, 10) || 0;
 
             const isNew = !empCurrentEditId;
             const existingId = document.getElementById('emp-form-id').value;
@@ -4584,17 +4611,17 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
 
             const emp = {
                 id,
-                employeeId: document.getElementById('ef-employeeId').value.trim(),
+                employeeId,
                 fullName,
-                phone: document.getElementById('ef-phone').value.trim(),
-                dob: document.getElementById('ef-dob').value,
-                address: document.getElementById('ef-address').value.trim(),
-                jobTitle: document.getElementById('ef-jobTitle').value.trim(),
-                employmentType: document.getElementById('ef-employmentType').value,
+                phone,
+                dob,
+                address,
+                jobTitle,
+                employmentType,
                 hireDate,
-                status: document.getElementById('ef-status').value,
-                dailyHours: document.getElementById('ef-dailyHours').value,
-                contractDuration: parseInt(document.getElementById('ef-contractDuration').value, 10) || 0,
+                status,
+                dailyHours,
+                contractDuration,
                 currentSalary,
                 updatedAt: new Date().toISOString(),
                 createdAt: isNew ? new Date().toISOString() : (oldEmpRecord?.createdAt || new Date().toISOString()),
@@ -4613,46 +4640,51 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
                 }
             }
 
-            // If new employee and salary > 0, create initial salary history entry
-            if (isNew && currentSalary > 0) {
-                const sh = {
-                    id: 'sh-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
-                    employeeId: id,
-                    oldSalary: 0,
-                    newSalary: currentSalary,
-                    changeAmount: currentSalary,
-                    changeType: 'Increase',
-                    effectiveDate: hireDate,
-                    note: 'Starting salary at hire',
-                    createdAt: new Date().toISOString()
-                };
-                await cloudDB.put(sh, 'salaryHistory');
-            }
-
-            // If editing and salary changed, record salary history
-            if (!isNew) {
-                const oldSalary = parseFloat(oldEmpRecord?.currentSalary) || 0;
-                if (oldSalary !== currentSalary) {
-                    const diff = currentSalary - oldSalary;
+            try {
+                // If new employee and salary > 0, create initial salary history entry
+                if (isNew && currentSalary > 0) {
                     const sh = {
                         id: 'sh-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
                         employeeId: id,
-                        oldSalary,
+                        oldSalary: 0,
                         newSalary: currentSalary,
-                        changeAmount: Math.abs(diff),
-                        changeType: diff > 0 ? 'Increase' : 'Decrease',
-                        effectiveDate: new Date().toISOString().split('T')[0],
-                        note: 'Updated via employee edit',
+                        changeAmount: currentSalary,
+                        changeType: 'Increase',
+                        effectiveDate: hireDate,
+                        note: 'Starting salary at hire',
                         createdAt: new Date().toISOString()
                     };
                     await cloudDB.put(sh, 'salaryHistory');
                 }
-            }
 
-            await cloudDB.put(emp, 'employees');
-            window.closeEmpFormModal();
-            window.refreshEmployeesModule();
-            showToast(isNew ? 'Employee added ✓' : 'Employee updated ✓');
+                // If editing and salary changed, record salary history
+                if (!isNew) {
+                    const oldSalary = parseFloat(oldEmpRecord?.currentSalary) || 0;
+                    if (oldSalary !== currentSalary) {
+                        const diff = currentSalary - oldSalary;
+                        const sh = {
+                            id: 'sh-' + Date.now() + '-' + Math.floor(Math.random() * 10000),
+                            employeeId: id,
+                            oldSalary,
+                            newSalary: currentSalary,
+                            changeAmount: Math.abs(diff),
+                            changeType: diff > 0 ? 'Increase' : 'Decrease',
+                            effectiveDate: new Date().toISOString().split('T')[0],
+                            note: 'Updated via employee edit',
+                            createdAt: new Date().toISOString()
+                        };
+                        await cloudDB.put(sh, 'salaryHistory');
+                    }
+                }
+
+                await cloudDB.put(emp, 'employees');
+                window.closeEmpFormModal();
+                window.refreshEmployeesModule();
+                showToast(isNew ? 'Employee added ✓' : 'Employee updated ✓');
+            } catch (err) {
+                console.error('Failed to save employee:', err);
+                showToast('Failed to save employee. Please try again.');
+            }
         };
 
         // ── Contract Datalist ──
