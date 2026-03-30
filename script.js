@@ -23,7 +23,7 @@
         // NEVER put Admin SDK private keys or service account JSON in this file.
         // ===========================================================================
         const FIREBASE_WEB_CONFIG = {
-            apiKey:            "AIzaSyAhXa5gLCMIIxuFIAj0RFeFEvAcE5Tii1Y",
+            apiKey:            "AIzaSyAhXa5gLCMIIxuFIAj0RFeFEvAcE5TiilY",
             authDomain:        "openy-suite.firebaseapp.com",
             projectId:         "openy-suite",
             storageBucket:     "openy-suite.firebasestorage.app",
