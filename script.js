@@ -4592,9 +4592,9 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             if (!employeeId)     { showToast('Employee ID is required.'); return; }
             if (!address)        { showToast('Address is required.'); return; }
             if (!hireDate)       { showToast('Hire Date is required.'); return; }
-            if (!contractDur && contractDur !== '0') { showToast('Contract Duration is required.'); return; }
+            if (contractDur === '' || contractDur === null || contractDur === undefined) { showToast('Contract Duration is required.'); return; }
             if (!status)         { showToast('Status is required.'); return; }
-            if (!dailyHours)     { showToast('Daily Working Hours is required.'); return; }
+            if (dailyHours === '' || dailyHours === null || dailyHours === undefined) { showToast('Daily Working Hours is required.'); return; }
             if (salaryRaw === '' || salaryRaw === null || salaryRaw === undefined) {
                 showToast('Salary is required.'); return;
             }
