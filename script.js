@@ -672,7 +672,9 @@
 
         // All known store names – extend here when adding new document types
         // Maps to Firestore collection names: quotations, invoices, clientContracts, hrContracts, employees, salaryHistory, activityLogs
-        const ALL_STORES = ['quotations', 'invoices', 'clientContracts', 'hrContracts', 'employees', 'salaryHistory', 'activityLogs', 'acctLedger', 'acctExpenses', 'acctClientCollections', 'acctEgyptCollections', 'acctCaptainCollections'];
+        const ALL_STORES = ['quotations', 'invoices', 'clientContracts', 'hrContracts', 'employees', 'salaryHistory', 'activityLogs', 'acctLedger', 'acctExpenses',
+            // Legacy stores kept for backward compatibility (data migration safety); no longer used as data-entry points
+            'acctClientCollections', 'acctEgyptCollections', 'acctCaptainCollections'];
 
         // One-time localStorage key migration (old names → new Firestore-aligned names)
         (function _migrateLocalStorageKeys() {
@@ -760,6 +762,8 @@
                             if (document.getElementById('ec-tab-history')?.classList.contains('active')) window.renderEcHistoryList();
                         } else if (storeName === 'employees' || storeName === 'salaryHistory') {
                             if (typeof window.refreshEmployeesModule === 'function') window.refreshEmployeesModule();
+                        } else if (storeName === 'acctLedger' || storeName === 'acctExpenses') {
+                            if (typeof window.refreshAccountingModule === 'function') window.refreshAccountingModule();
                         }
                     }, (error) => console.error(`Firestore sync error for ${storeName}:`, error));
                 } catch(e) { console.error(`Failed to setup realtime for ${storeName}:`, e); }
@@ -5176,7 +5180,7 @@ Only fill fields relevant to the detected document type. Return ONLY valid JSON.
             let acctCurrentStore = null;   // which store is being edited
             let acctEditingId = null;      // null = new record, string = edit existing
 
-            // ── Currency conversion rates to EGP ──
+            // ── Currency conversion rates to EGP (approximate; update periodically as exchange rates change) ──
             const ACCT_CURRENCY_RATES = { EGP: 1, SAR: 8.5, AED: 8.8 };
 
             // ── Helpers ──
