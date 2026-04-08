@@ -75,7 +75,7 @@ export async function logHistory(recordId: string, title: string): Promise<void>
     id,
     data: {
       record_id: recordId,
-      title: title || recordId || '',
+      title: title || 'Invoice activity',
       action_type: 'created',
       module_name: 'invoice',
       created_at: new Date().toISOString(),
