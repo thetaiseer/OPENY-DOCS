@@ -4,22 +4,33 @@
 -- Run this script once in your Supabase project:
 --   Dashboard → SQL Editor → New query → paste → Run
 --
--- All tables use a single JSONB `data` column so the app can
--- store any record shape without schema migrations.
--- The `id` column mirrors the record's own `id` field and
--- acts as the primary key for upserts.
+-- Invoices and activity_logs use dedicated columns.
+-- All other tables use a single JSONB `data` column.
 --
 -- Storage bucket for exported files (PDF / Excel / Word):
 --   Dashboard → Storage → New bucket → name: "documents" → Public bucket: ON
 -- The app uploads to paths like:  invoices/<timestamp>-<uid>-<filename>
 -- ============================================================
 
--- Invoices
+-- Enable pgcrypto for gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Invoices (column-based for cross-device querying)
 CREATE TABLE IF NOT EXISTS invoices (
-    id         TEXT        PRIMARY KEY,
-    data       JSONB       NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    id             UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    invoice_number TEXT        NOT NULL,
+    client_name    TEXT        NOT NULL,
+    currency       TEXT        NOT NULL DEFAULT 'EGP',
+    total_budget   NUMERIC     NOT NULL DEFAULT 0,
+    campaign_month TEXT,
+    invoice_date   TEXT,
+    status         TEXT        NOT NULL DEFAULT 'draft',
+    pdf_url        TEXT,
+    excel_url      TEXT,
+    form_data      JSONB,
+    archived       BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Quotations
@@ -62,12 +73,15 @@ CREATE TABLE IF NOT EXISTS salary_history (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Activity Logs
+-- Activity Logs (column-based for structured querying)
 CREATE TABLE IF NOT EXISTS activity_logs (
-    id         TEXT        PRIMARY KEY,
-    data       JSONB       NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    id         UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+    module     TEXT        NOT NULL,
+    record_id  UUID        NOT NULL,
+    action     TEXT        NOT NULL,
+    title      TEXT,
+    details    TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Accounting Ledger
@@ -111,31 +125,34 @@ CREATE TABLE IF NOT EXISTS acct_captain_collections (
 );
 
 -- ============================================================
--- Optional: auto-update `updated_at` on every row change
--- Requires the moddatetime extension (enabled by default in
--- Supabase — run once if not already enabled):
+-- Row-Level Security for invoices and activity_logs
+-- Allows anonymous access (anon role) so the app can read
+-- and write without authentication. Tighten these policies
+-- once you add user authentication to the app.
 -- ============================================================
--- CREATE EXTENSION IF NOT EXISTS moddatetime SCHEMA extensions;
---
--- CREATE OR REPLACE TRIGGER set_updated_at_invoices
---     BEFORE UPDATE ON invoices
---     FOR EACH ROW EXECUTE FUNCTION extensions.moddatetime(updated_at);
---
--- (Repeat the trigger block for each table as needed.)
--- ============================================================
+ALTER TABLE invoices      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "invoices_allow_all" ON invoices;
+CREATE POLICY "invoices_allow_all"
+ON invoices FOR ALL TO anon
+USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "logs_allow_all" ON activity_logs;
+CREATE POLICY "logs_allow_all"
+ON activity_logs FOR ALL TO anon
+USING (true) WITH CHECK (true);
 
 -- ============================================================
--- Optional: Row-Level Security
+-- Optional: Row-Level Security for other tables
 -- Uncomment after confirming the app works, then add policies
 -- that match your auth setup.
 -- ============================================================
--- ALTER TABLE invoices              ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE quotations            ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE client_contracts      ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE hr_contracts          ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE employees             ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE salary_history        ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE activity_logs         ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE acct_ledger           ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE acct_expenses         ENABLE ROW LEVEL SECURITY;
 -- ALTER TABLE acct_client_collections   ENABLE ROW LEVEL SECURITY;

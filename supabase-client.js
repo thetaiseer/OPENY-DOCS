@@ -7,13 +7,21 @@
 //      (sets window.SUPABASE_URL and window.SUPABASE_ANON_KEY)
 //
 // Exposes window.supabaseDB with the following API:
-//   saveInvoice(form)                 → upsert invoice row
+//   saveInvoice(form)                 → upsert invoice row (returns record with Supabase UUID)
 //   uploadInvoicePdf(file, invoiceId) → upload PDF to "documents" bucket
-//   attachPdfUrl(invoiceId, pdfUrl)   → patch pdf_url inside invoice.data
-//   logHistory(recordId, title)       → insert activity_logs row
-//   getInvoices()                     → fetch all invoice records
+//   attachPdfUrl(invoiceId, pdfUrl)   → update pdf_url column in invoices
+//   logHistory(recordId, title, action, details) → insert activity_logs row
+//   getInvoices()                     → fetch all non-archived invoice records
 //   getInvoiceHistory()               → fetch activity_logs records
 //   ready                             → boolean, true when client is live
+//
+// Schema (invoices):
+//   id uuid PK, invoice_number, client_name, currency, total_budget,
+//   campaign_month, invoice_date, status, pdf_url, excel_url,
+//   form_data jsonb, archived bool, created_at, updated_at
+//
+// Schema (activity_logs):
+//   id uuid PK, module, record_id uuid, action, title, details, created_at
 //
 // Realtime subscriptions for "invoices" and "activity_logs" are
 // started automatically when the client is ready.
@@ -24,6 +32,11 @@
 
     let _client = null;
     let _ready  = false;
+
+    // ── UUID check ────────────────────────────────────────────────────────
+    function _isUUID(str) {
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(str || ''));
+    }
 
     // ── Initialise ────────────────────────────────────────────────────────
     function _init() {
@@ -55,23 +68,49 @@
     }
 
     // ── saveInvoice ───────────────────────────────────────────────────────
-    // Upserts a full invoice record. `form` must have an `id` field.
-    // The entire form object is stored in the JSONB `data` column.
+    // Upserts an invoice record using the column-based schema.
+    // If form.id is a valid UUID, updates that row; otherwise inserts a new
+    // row and lets Supabase generate the UUID.
+    // Returns a flat record object with the Supabase UUID as `id`.
     async function saveInvoice(form) {
         if (!_ready) return null;
-        const row = {
-            id:         form.id,
-            data:       form,
-            updated_at: new Date().toISOString()
+
+        const payload = {
+            invoice_number: form.ref || form.invoice_number || ('INV-' + Date.now()),
+            client_name:    form.client || form.client_name || 'Unknown',
+            currency:       form.currency || 'EGP',
+            total_budget:   Number(form.amount || form.total || form.total_budget || 0),
+            campaign_month: form.campaignMonth || form.campaign_month || form.date || '',
+            invoice_date:   form.invoiceDate || form.invoice_date || form.date || '',
+            status:         form.archived ? 'archived' : (form.status || 'draft'),
+            form_data:      form,
+            archived:       form.archived || false,
+            updated_at:     new Date().toISOString(),
         };
-        const { data, error } = await _client
-            .from('invoices')
-            .upsert(row, { onConflict: 'id' })
-            .select()
-            .single();
+
+        let data, error;
+        if (_isUUID(form.id)) {
+            // UPDATE existing row
+            ({ data, error } = await _client
+                .from('invoices')
+                .update(payload)
+                .eq('id', form.id)
+                .select()
+                .single());
+        } else {
+            // INSERT new row — Supabase generates the UUID
+            ({ data, error } = await _client
+                .from('invoices')
+                .insert([payload])
+                .select()
+                .single());
+        }
+
         if (error) throw error;
-        console.log('[OPENY] Supabase saveInvoice success — id:', form.id);
-        return data;
+        console.log('[OPENY] Supabase saveInvoice success — id:', data.id);
+
+        // Return record in the flat format the rest of the app expects
+        return _rowToRecord(data);
     }
 
     // ── uploadInvoicePdf ──────────────────────────────────────────────────
@@ -101,22 +140,13 @@
     }
 
     // ── attachPdfUrl ──────────────────────────────────────────────────────
-    // Patches the `pdf_url` key inside the JSONB data column of an invoice.
+    // Updates the pdf_url column on an invoice row.
     async function attachPdfUrl(invoiceId, pdfUrl) {
         if (!_ready || !pdfUrl) return;
         try {
-            // Fetch existing data first so we can merge cleanly
-            const { data: existing, error: fetchErr } = await _client
-                .from('invoices')
-                .select('data')
-                .eq('id', invoiceId)
-                .single();
-            if (fetchErr) throw fetchErr;
-
-            const updatedData = Object.assign({}, existing.data, { pdf_url: pdfUrl });
             const { error } = await _client
                 .from('invoices')
-                .update({ data: updatedData, updated_at: new Date().toISOString() })
+                .update({ pdf_url: pdfUrl, updated_at: new Date().toISOString() })
                 .eq('id', invoiceId);
             if (error) throw error;
             console.log('[OPENY] Supabase attachPdfUrl success — id:', invoiceId);
@@ -125,25 +155,35 @@
         }
     }
 
+    // ── attachExcelUrl ────────────────────────────────────────────────────
+    // Updates the excel_url column on an invoice row.
+    async function attachExcelUrl(invoiceId, excelUrl) {
+        if (!_ready || !excelUrl) return;
+        try {
+            const { error } = await _client
+                .from('invoices')
+                .update({ excel_url: excelUrl, updated_at: new Date().toISOString() })
+                .eq('id', invoiceId);
+            if (error) throw error;
+            console.log('[OPENY] Supabase attachExcelUrl success — id:', invoiceId);
+        } catch (e) {
+            console.warn('[OPENY] attachExcelUrl failed (non-critical):', e.message);
+        }
+    }
+
     // ── logHistory ────────────────────────────────────────────────────────
-    // Inserts a row into activity_logs for the given invoice.
-    async function logHistory(recordId, title) {
+    // Inserts a row into activity_logs for the given invoice UUID.
+    async function logHistory(recordId, title, action, details) {
         if (!_ready) return;
         try {
-            const uid = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                ? crypto.randomUUID()
-                : (Date.now().toString(36) + Math.random().toString(36).slice(2));
             const entry = {
-                id:   'log-' + uid,
-                data: {
-                    record_id:   recordId,
-                    title:       title || recordId || '',
-                    action_type: 'created',
-                    module_name: 'invoice',
-                    created_at:  new Date().toISOString()
-                }
+                module:    'invoice',
+                record_id: recordId,
+                action:    action || 'created',
+                title:     title  || recordId || '',
+                details:   details || '',
             };
-            const { error } = await _client.from('activity_logs').insert(entry);
+            const { error } = await _client.from('activity_logs').insert([entry]);
             if (error) throw error;
             console.log('[OPENY] Supabase logHistory success — record:', recordId);
         } catch (e) {
@@ -152,20 +192,19 @@
     }
 
     // ── getInvoices ───────────────────────────────────────────────────────
-    // Fetches all invoice rows and returns them as flat record objects
-    // (spreading the JSONB `data` column so callers get the same shape
-    // that cloudDB.getAll('invoices') has always produced).
+    // Fetches all non-archived invoice rows and returns them as flat record
+    // objects compatible with the rest of the app (spreading form_data so
+    // callers get the original field names alongside the column values).
     async function getInvoices() {
         if (!_ready) return [];
         try {
             const { data, error } = await _client
                 .from('invoices')
-                .select('id, data, created_at, updated_at')
+                .select('*')
+                .eq('archived', false)
                 .order('created_at', { ascending: false });
             if (error) throw error;
-            const records = (data || []).map(function(row) {
-                return Object.assign({ id: row.id }, row.data || {}, { _created_at: row.created_at });
-            });
+            const records = (data || []).map(_rowToRecord);
             console.log('[OPENY] Supabase getInvoices — ' + records.length + ' record(s)');
             return records;
         } catch (e) {
@@ -175,19 +214,27 @@
     }
 
     // ── getInvoiceHistory ─────────────────────────────────────────────────
-    // Fetches the 200 most-recent activity_logs rows and returns them as
-    // flat record objects.
+    // Fetches the 200 most-recent activity_logs rows for the invoice module.
     async function getInvoiceHistory() {
         if (!_ready) return [];
         try {
             const { data, error } = await _client
                 .from('activity_logs')
-                .select('id, data, created_at')
+                .select('*')
+                .eq('module', 'invoice')
                 .order('created_at', { ascending: false })
                 .limit(200);
             if (error) throw error;
             const records = (data || []).map(function(row) {
-                return Object.assign({ id: row.id }, row.data || {}, { _created_at: row.created_at });
+                return {
+                    id:          row.id,
+                    record_id:   row.record_id,
+                    title:       row.title   || '',
+                    details:     row.details || '',
+                    action_type: row.action  || 'created',
+                    module_name: row.module  || 'invoice',
+                    _created_at: row.created_at,
+                };
             });
             console.log('[OPENY] Supabase getInvoiceHistory — ' + records.length + ' record(s)');
             return records;
@@ -195,6 +242,33 @@
             console.warn('[OPENY] getInvoiceHistory failed:', e.message);
             return [];
         }
+    }
+
+    // ── _rowToRecord ──────────────────────────────────────────────────────
+    // Maps a raw Supabase invoices row to the flat record object shape the
+    // rest of the app expects (client, ref, amount, year, month, day, …).
+    function _rowToRecord(row) {
+        var ts = new Date(row.created_at);
+        return Object.assign({}, row.form_data || {}, {
+            id:           row.id,
+            client:       row.client_name,
+            client_name:  row.client_name,
+            ref:          row.invoice_number,
+            amount:       row.total_budget,
+            total:        row.total_budget,
+            currency:     row.currency,
+            status:       row.status || 'draft',
+            year:         ts.getFullYear(),
+            month:        ts.getMonth() + 1,
+            day:          ts.getDate(),
+            timestamp:    ts.getTime(),
+            date:         row.invoice_date || '',
+            fileUrl:      row.pdf_url      || '',
+            pdf_url:      row.pdf_url      || '',
+            excel_url:    row.excel_url    || '',
+            archived:     row.archived     || false,
+            _created_at:  row.created_at,
+        });
     }
 
     // ── Realtime subscriptions ────────────────────────────────────────────
@@ -228,14 +302,16 @@
 
     // ── Public API ────────────────────────────────────────────────────────
     window.supabaseDB = {
-        saveInvoice:      saveInvoice,
-        uploadInvoicePdf: uploadInvoicePdf,
-        attachPdfUrl:     attachPdfUrl,
-        logHistory:       logHistory,
-        getInvoices:      getInvoices,
+        saveInvoice:       saveInvoice,
+        uploadInvoicePdf:  uploadInvoicePdf,
+        attachPdfUrl:      attachPdfUrl,
+        attachExcelUrl:    attachExcelUrl,
+        logHistory:        logHistory,
+        getInvoices:       getInvoices,
         getInvoiceHistory: getInvoiceHistory,
         get ready() { return _ready; }
     };
 
     console.log('[OPENY] supabaseDB module loaded');
 }());
+

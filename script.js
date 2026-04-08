@@ -74,7 +74,9 @@
         async function initInvoiceNumber() {
             const year = new Date().getFullYear();
             const prefix = `INV-${year}-`;
-            const records = await cloudDB.getAll('invoices');
+            const records = (window.supabaseDB && window.supabaseDB.ready)
+                ? await window.supabaseDB.getInvoices()
+                : await cloudDB.getAll('invoices');
             let maxNum = 0;
             records.forEach(r => {
                 if (r.ref && r.ref.startsWith(prefix)) {
@@ -2049,19 +2051,24 @@
             };
 
             try {
-                // ── 1. Save invoice to Supabase ───────────────────────────────
+                // ── 1. Save invoice record ────────────────────────────────────
                 console.log('saving invoice...');
                 const _now3 = new Date();
                 const _editingInvoiceId = currentEditingInvHistoryId;
                 // Preserve existing status when editing an existing invoice
                 let invPdfStatus = 'unpaid';
                 if (_editingInvoiceId) {
-                    const existing = (await cloudDB.getAll('invoices')).find(r => r.id === _editingInvoiceId);
-                    if (existing && existing.status) invPdfStatus = existing.status;
+                    if (window.supabaseDB && window.supabaseDB.ready) {
+                        const existing = (await window.supabaseDB.getInvoices()).find(r => r.id === _editingInvoiceId);
+                        if (existing && existing.status) invPdfStatus = existing.status;
+                    } else {
+                        const existing = (await cloudDB.getAll('invoices')).find(r => r.id === _editingInvoiceId);
+                        if (existing && existing.status) invPdfStatus = existing.status;
+                    }
                 }
                 const _invSnap = _captureInvoiceSnapshot();
                 const _invClient = invoiceData.client || 'Unknown Client';
-                const record = {
+                let record = {
                     id: _editingInvoiceId || Date.now().toString(),
                     client: _invClient,
                     client_name: _invClient,
@@ -2080,7 +2087,12 @@
                     formSnapshot: _invSnap,
                     form_data_json: _invSnap
                 };
-                await cloudDB.put(record, 'invoices');
+                if (window.supabaseDB && window.supabaseDB.ready) {
+                    const saved = await window.supabaseDB.saveInvoice(record);
+                    if (saved) record = saved;
+                } else {
+                    await cloudDB.put(record, 'invoices');
+                }
                 console.log('invoice saved with id', record.id);
 
                 // ── 2. Generate PDF ───────────────────────────────────────────
@@ -2107,7 +2119,10 @@
 
                 // ── 5. Insert activity_logs row ───────────────────────────────
                 if (window.supabaseDB && window.supabaseDB.ready) {
-                    await window.supabaseDB.logHistory(record.id, record.ref || record.client);
+                    await window.supabaseDB.logHistory(record.id, record.ref || record.client, _editingInvoiceId ? 'updated' : 'created');
+                    if (invPdfUrl) {
+                        await window.supabaseDB.logHistory(record.id, record.ref || record.client, 'exported', invPdfUrl);
+                    }
                 } else {
                     await logActivity(_editingInvoiceId ? 'updated' : 'created', 'invoice', record.id, { client: record.client, ref: record.ref, amount: record.amount, currency: record.currency });
                 }
@@ -2453,12 +2468,17 @@
                 // Preserve existing status when editing an existing invoice
                 let invXlsStatus = 'unpaid';
                 if (_editingInvoiceIdExcel) {
-                    const existing = (await cloudDB.getAll('invoices')).find(r => r.id === _editingInvoiceIdExcel);
-                    if (existing && existing.status) invXlsStatus = existing.status;
+                    if (window.supabaseDB && window.supabaseDB.ready) {
+                        const existing = (await window.supabaseDB.getInvoices()).find(r => r.id === _editingInvoiceIdExcel);
+                        if (existing && existing.status) invXlsStatus = existing.status;
+                    } else {
+                        const existing = (await cloudDB.getAll('invoices')).find(r => r.id === _editingInvoiceIdExcel);
+                        if (existing && existing.status) invXlsStatus = existing.status;
+                    }
                 }
                 const _invSnapXls = _captureInvoiceSnapshot();
                 const _invClientXls = invoiceData.client || 'Unknown Client';
-                const record = {
+                let record = {
                     id: _editingInvoiceIdExcel || Date.now().toString(),
                     client: _invClientXls,
                     client_name: _invClientXls,
@@ -2477,11 +2497,20 @@
                     formSnapshot: _invSnapXls,
                     form_data_json: _invSnapXls
                 };
-                const invXlsUrl = await uploadExportToStorage(blob, 'invoices', filename);
-                if (invXlsUrl) record.fileUrl = invXlsUrl;
-                await cloudDB.put(record, 'invoices');
+                if (window.supabaseDB && window.supabaseDB.ready) {
+                    const saved = await window.supabaseDB.saveInvoice(record);
+                    if (saved) record = saved;
+                    // Upload Excel to storage and attach url
+                    const invXlsUrl = await uploadExportToStorage(blob, 'invoices', filename);
+                    if (invXlsUrl) await window.supabaseDB.attachExcelUrl(record.id, invXlsUrl);
+                    await window.supabaseDB.logHistory(record.id, record.ref || record.client, _editingInvoiceIdExcel ? 'updated' : 'created');
+                } else {
+                    const invXlsUrl = await uploadExportToStorage(blob, 'invoices', filename);
+                    if (invXlsUrl) record.fileUrl = invXlsUrl;
+                    await cloudDB.put(record, 'invoices');
+                    await logActivity(_editingInvoiceIdExcel ? 'updated' : 'created', 'invoice', record.id, { client: record.client, ref: record.ref, amount: record.amount, currency: record.currency });
+                }
                 console.log('invoice saved with id', record.id);
-                await logActivity(_editingInvoiceIdExcel ? 'updated' : 'created', 'invoice', record.id, { client: record.client, ref: record.ref, amount: record.amount, currency: record.currency });
                 console.log('history inserted');
 
                 // ── 2. Download the Excel file ───────────────────────────────────
@@ -2698,7 +2727,9 @@
             container.innerHTML = '<div style="text-align:center;padding:32px;color:#94A3B8;">Loading…</div>';
             if (emptyEl) emptyEl.classList.add('hidden');
 
-            const allRecords = await cloudDB.getAll('invoices');
+            const allRecords = (window.supabaseDB && window.supabaseDB.ready)
+                ? await window.supabaseDB.getInvoices()
+                : await cloudDB.getAll('invoices');
             console.log('fetched invoices count', allRecords.length);
 
             const uniqueClients = [...new Set(allRecords.map(r => r.client).filter(Boolean))].sort();
@@ -2801,10 +2832,24 @@
         };
 
         window.toggleStatus = async function(id, storeName, currentStatus) {
+            const newStatus = currentStatus === 'paid' ? 'unpaid' : 'paid';
+            if (storeName === 'invoices' && window.supabaseDB && window.supabaseDB.ready) {
+                try {
+                    const existing = (await window.supabaseDB.getInvoices()).find(r => r.id === id);
+                    if (existing) {
+                        existing.status = newStatus;
+                        await window.supabaseDB.saveInvoice(existing);
+                    }
+                } catch (e) {
+                    console.warn('[OPENY] toggleStatus Supabase update failed:', e.message);
+                }
+                window.renderInvHistoryList();
+                return;
+            }
             const records = await cloudDB.getAll(storeName);
             const record = records.find(r => r.id === id);
             if (record) {
-                record.status = currentStatus === 'paid' ? 'unpaid' : 'paid';
+                record.status = newStatus;
                 await cloudDB.put(record, storeName);
                 if (storeName === 'quotations') window.renderHistoryList();
                 else if (storeName === 'invoices') window.renderInvHistoryList();
