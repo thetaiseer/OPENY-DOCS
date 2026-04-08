@@ -1,101 +1,135 @@
 import { supabase } from '../lib/supabase';
 
-// ── createInvoice ─────────────────────────────────────────────────────────────
-// Upserts a full invoice record into the `invoices` table.
-// The entire record object is stored in the JSONB `data` column.
-export async function createInvoice(record: Record<string, unknown>): Promise<Record<string, unknown> | null> {
-  const row = {
-    id: record.id,
-    data: record,
-    updated_at: new Date().toISOString(),
+// Types
+
+export type InvoiceFormData = {
+  id?: string;
+  invoiceNumber?: string;
+  clientName?: string;
+  currency?: string;
+  totalBudget?: number | string;
+  campaignMonth?: string;
+  invoiceDate?: string;
+  status?: string;
+  [key: string]: unknown;
+};
+
+// buildInvoicePayload
+// Maps an InvoiceFormData object to the invoices table columns.
+function buildInvoicePayload(form: InvoiceFormData) {
+  return {
+    invoice_number: form.invoiceNumber || `INV-${Date.now()}`,
+    client_name:    form.clientName    || 'Unknown',
+    currency:       form.currency      || 'EGP',
+    total_budget:   Number(form.totalBudget || 0),
+    campaign_month: form.campaignMonth || '',
+    invoice_date:   form.invoiceDate   || '',
+    status:         form.status        || 'draft',
+    form_data:      form,
+    archived:       false,
+    updated_at:     new Date().toISOString(),
   };
+}
+
+// createInvoice
+// Inserts a new invoice row. Supabase auto-generates the UUID.
+export async function createInvoice(form: InvoiceFormData) {
+  const payload = buildInvoicePayload(form);
+
   const { data, error } = await supabase
     .from('invoices')
-    .upsert(row, { onConflict: 'id' })
+    .insert([payload])
     .select()
     .single();
+
   if (error) throw error;
   return data;
 }
 
-// ── getInvoices ───────────────────────────────────────────────────────────────
-// Fetches all invoice rows, returning flat record objects by spreading the
-// JSONB `data` column so callers receive the same shape the rest of the app
-// already expects.
-export async function getInvoices(): Promise<Record<string, unknown>[]> {
+// getInvoices
+// Fetches all non-archived invoice rows ordered by newest first.
+export async function getInvoices() {
   const { data, error } = await supabase
     .from('invoices')
-    .select('id, data, created_at, updated_at')
+    .select('*')
+    .eq('archived', false)
     .order('created_at', { ascending: false });
+
   if (error) throw error;
-  return (data || []).map((row) =>
-    Object.assign({ id: row.id }, row.data || {}, { _created_at: row.created_at })
-  );
+  return data || [];
 }
 
-// ── uploadInvoicePdf ──────────────────────────────────────────────────────────
+// uploadInvoicePdf
 // Uploads a PDF File/Blob to the "documents" storage bucket and returns the
-// public URL of the uploaded file, or null on failure.
-export async function uploadInvoicePdf(file: File, invoiceId: string): Promise<string | null> {
-  const uid = crypto.randomUUID().slice(0, 8);
-  const path = `invoices/${Date.now()}-${uid}-${file.name || `invoice-${invoiceId}.pdf`}`;
+// public URL, or throws on failure.
+export async function uploadInvoicePdf(file: File | Blob, id: string): Promise<string> {
+  const path = `invoices/${id}.pdf`;
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from('documents')
-    .upload(path, file, { contentType: 'application/pdf', upsert: false });
+    .upload(path, file, { upsert: true, contentType: 'application/pdf' });
+
   if (error) throw error;
 
-  const { data: urlData } = supabase.storage.from('documents').getPublicUrl(data.path);
-  return urlData.publicUrl;
+  const { data } = supabase.storage.from('documents').getPublicUrl(path);
+  return data.publicUrl;
 }
 
-// ── savePdfUrl ────────────────────────────────────────────────────────────────
-// Patches the `pdf_url` key inside the JSONB data column of an invoice row.
-export async function savePdfUrl(invoiceId: string, pdfUrl: string): Promise<void> {
-  const { data: existing, error: fetchErr } = await supabase
-    .from('invoices')
-    .select('data')
-    .eq('id', invoiceId)
-    .single();
-  if (fetchErr) throw fetchErr;
-
-  const updatedData = Object.assign({}, existing.data, { pdf_url: pdfUrl });
+// savePdfUrl
+// Updates the pdf_url column of an existing invoice row.
+export async function savePdfUrl(id: string, url: string): Promise<void> {
   const { error } = await supabase
     .from('invoices')
-    .update({ data: updatedData, updated_at: new Date().toISOString() })
-    .eq('id', invoiceId);
+    .update({ pdf_url: url, updated_at: new Date().toISOString() })
+    .eq('id', id);
+
   if (error) throw error;
 }
 
-// ── logHistory ────────────────────────────────────────────────────────────────
+// logHistory
 // Inserts a row into `activity_logs` to record invoice activity.
-export async function logHistory(recordId: string, title: string): Promise<void> {
-  const id = 'log-' + crypto.randomUUID();
-  const entry = {
-    id,
-    data: {
-      record_id: recordId,
-      title: title || 'Invoice activity',
-      action_type: 'created',
-      module_name: 'invoice',
-      created_at: new Date().toISOString(),
+export async function logHistory(params: {
+  recordId: string;
+  action: 'created' | 'updated' | 'exported' | 'archived';
+  title: string;
+  details?: string;
+}): Promise<void> {
+  const { error } = await supabase.from('activity_logs').insert([
+    {
+      module:    'invoice',
+      record_id: params.recordId,
+      action:    params.action,
+      title:     params.title,
+      details:   params.details || '',
     },
-  };
-  const { error } = await supabase.from('activity_logs').insert(entry);
+  ]);
+
   if (error) throw error;
 }
 
-// ── getHistory ────────────────────────────────────────────────────────────────
-// Fetches the 200 most-recent `activity_logs` rows, returning flat record
-// objects by spreading the JSONB `data` column.
-export async function getHistory(): Promise<Record<string, unknown>[]> {
+// getHistory
+// Fetches the 200 most-recent `activity_logs` rows for the invoice module.
+export async function getHistory() {
   const { data, error } = await supabase
     .from('activity_logs')
-    .select('id, data, created_at')
+    .select('*')
+    .eq('module', 'invoice')
     .order('created_at', { ascending: false })
     .limit(200);
+
   if (error) throw error;
-  return (data || []).map((row) =>
-    Object.assign({ id: row.id }, row.data || {}, { _created_at: row.created_at })
-  );
+  return data || [];
+}
+
+// archiveInvoice
+// Marks an invoice as archived and logs the action.
+export async function archiveInvoice(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('invoices')
+    .update({ archived: true, status: 'archived', updated_at: new Date().toISOString() })
+    .eq('id', id);
+
+  if (error) throw error;
+
+  await logHistory({ recordId: id, action: 'archived', title: 'Invoice archived' });
 }
