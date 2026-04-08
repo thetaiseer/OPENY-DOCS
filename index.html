@@ -2083,10 +2083,12 @@
         </div>
     </div>
 
-    <!-- Supabase JS SDK (UMD build — exposes window.supabase) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <!-- Supabase connection config: set your URL and anon key in this file -->
-    <script src="supabase-config.js"></script>
+    <!-- Firebase SDK (compat builds — expose firebase.app, firebase.firestore, firebase.storage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+    <!-- Firebase connection config: set your project credentials in this file -->
+    <script src="firebase-config.js"></script>
 
     <!-- Custom date/month picker – must load before script.js so value setters
          are in place when script.js initialises field defaults -->

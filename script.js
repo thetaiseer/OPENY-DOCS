@@ -701,49 +701,47 @@
         };
 
         // ==========================================================================
-        // 4. STORAGE / DB (Supabase-backed with in-memory fallback)
+        // 4. STORAGE / DB (Firebase Firestore-backed with in-memory fallback)
         // ==========================================================================
 
-        // ── Supabase client init ──────────────────────────────────────────────────
-        const _sbUrl  = (typeof window !== 'undefined' && window.SUPABASE_URL)      || '';
-        const _sbKey  = (typeof window !== 'undefined' && window.SUPABASE_ANON_KEY) || '';
-        let _supabase      = null;
-        let _supabaseReady = false;
+        // ── Firebase client init ──────────────────────────────────────────────────
+        const _fbConfig = (typeof window !== 'undefined' && window.FIREBASE_CONFIG) || {};
+        let _db            = null;
+        let _storage       = null;
+        let _firebaseReady = false;
+        let _appReady      = false; // set to true once DOMContentLoaded finishes
 
-        if (_sbUrl && _sbKey &&
-            !_sbUrl.includes('YOUR_SUPABASE_URL') &&
-            !_sbKey.includes('YOUR_SUPABASE_ANON_KEY')) {
+        const _hasPlaceholder = v => !v || /^YOUR_[A-Z_]+_HERE$/.test(String(v));
+        if (!_hasPlaceholder(_fbConfig.apiKey) && !_hasPlaceholder(_fbConfig.projectId)) {
             try {
-                _supabase      = window.supabase.createClient(_sbUrl, _sbKey);
-                _supabaseReady = true;
-                console.log('[OPENY] ✅ Supabase client initialised:', _sbUrl);
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(_fbConfig);
+                }
+                _db            = firebase.firestore();
+                _storage       = firebase.storage();
+                _firebaseReady = true;
+                console.log('[OPENY] ✅ Firebase client initialised:', _fbConfig.projectId);
             } catch (e) {
-                console.error('[OPENY] ❌ Supabase init error — check supabase-config.js:', e.message);
+                console.error('[OPENY] ❌ Firebase init error — check firebase-config.js:', e.message);
             }
         } else {
-            console.warn('[OPENY] ⚠️  Supabase not configured — running in-memory only. Data will be lost on page refresh.');
-            console.info('[OPENY] Open supabase-config.js and replace the placeholder values with your Project URL and anon key.');
+            console.warn('[OPENY] ⚠️  Firebase not configured — running in-memory only. Data will be lost on page refresh.');
+            console.info('[OPENY] Open firebase-config.js and replace the placeholder values with your Firebase project credentials.');
         }
 
-        // Async connection test — runs once after init to verify DB is reachable
-        if (_supabaseReady) {
+        // Async connection test — runs once after init to verify Firestore is reachable
+        if (_firebaseReady) {
             (async () => {
                 try {
-                    const { error } = await _supabase.from('invoices').select('id').limit(1);
-                    if (!error) {
-                        console.log('[OPENY] ✅ Supabase connection test passed — invoices table found');
-                    } else if (error.code === 'PGRST116') {
-                        console.warn('[OPENY] ⚠️  Supabase connected but tables are missing. Run supabase-schema.sql in your Supabase SQL editor.');
-                    } else {
-                        console.error('[OPENY] ❌ Supabase connection test failed:', error.message);
-                    }
+                    await _db.collection('invoices').limit(1).get();
+                    console.log('[OPENY] ✅ Firebase connection test passed — Firestore accessible');
                 } catch (e) {
-                    console.error('[OPENY] ❌ Supabase connection test error:', e.message);
+                    console.error('[OPENY] ❌ Firebase connection test failed:', e.message);
                 }
             })();
         }
 
-        // camelCase store names → snake_case Supabase table names
+        // camelCase store names → Firestore collection names
         const STORE_TO_TABLE = {
             quotations:             'quotations',
             invoices:               'invoices',
@@ -759,7 +757,7 @@
             acctCaptainCollections: 'acct_captain_collections',
         };
 
-        // ── In-memory cache (primary store when Supabase is offline / unconfigured) ─
+        // ── In-memory cache (primary store when Firebase is offline / unconfigured) ─
         const localStore = {
             _cache: {},
             getAll(storeName) {
@@ -788,86 +786,75 @@
             // Legacy stores kept for backward compatibility (data migration safety); no longer used as data-entry points
             'acctClientCollections', 'acctEgyptCollections', 'acctCaptainCollections'];
 
-        // ── cloudDB: Supabase-backed operations with in-memory fallback ──────────
+        // ── cloudDB: Firebase Firestore-backed operations with in-memory fallback ─
         const cloudDB = {
-            _table(storeName) {
+            _collection(storeName) {
                 return STORE_TO_TABLE[storeName] || storeName;
             },
-            // Fetch all records – reads from Supabase (live) and refreshes local cache
+            // Fetch all records – reads from Firestore (live) and refreshes local cache
             async getAll(storeName = 'history') {
-                if (_supabaseReady) {
+                if (_firebaseReady) {
                     try {
-                        const { data, error } = await _supabase
-                            .from(this._table(storeName))
-                            .select('data');
-                        if (error) throw error;
-                        const records = (data || []).map(row => row.data);
+                        const snapshot = await _db.collection(this._collection(storeName)).get();
+                        const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                         localStore._cache[storeName] = records;
-                        console.log(`[OPENY] Supabase getAll(${storeName}) — ${records.length} record(s)`);
+                        console.log(`[OPENY] Firestore getAll(${storeName}) — ${records.length} record(s)`);
                         return records;
                     } catch (e) {
-                        console.error(`[OPENY] Supabase getAll(${storeName}) failed, using local cache:`, e.message);
+                        console.error(`[OPENY] Firestore getAll(${storeName}) failed, using local cache:`, e.message);
                     }
                 }
                 const cached = localStore.getAll(storeName);
-                console.log(`[OPENY] localStore getAll(${storeName}) — ${cached.length} record(s) (Supabase not configured or failed)`);
+                console.log(`[OPENY] localStore getAll(${storeName}) — ${cached.length} record(s) (Firebase not configured or failed)`);
                 return cached;
             },
-            // Upsert a record – writes to local cache immediately, then syncs to Supabase
+            // Upsert a record – writes to local cache immediately, then syncs to Firestore
             async put(record, storeName = 'history') {
                 localStore.put(record, storeName);
-                if (_supabaseReady) {
+                if (_firebaseReady) {
                     try {
-                        const { data: saved, error } = await _supabase
-                            .from(this._table(storeName))
-                            .upsert({ id: record.id, data: record }, { onConflict: 'id' })
-                            .select('data')
-                            .single();
-                        if (error) throw error;
-                        // Keep local cache in sync with the server-returned record
-                        if (saved && saved.data) localStore.put(saved.data, storeName);
-                        console.log(`[OPENY] Supabase put(${storeName}) success — id:`, record.id);
+                        await _db.collection(this._collection(storeName)).doc(record.id).set(record);
+                        console.log(`[OPENY] Firestore put(${storeName}) success — id:`, record.id);
                     } catch (e) {
-                        console.error(`[OPENY] Supabase put(${storeName}) failed:`, e.message);
+                        console.error(`[OPENY] Firestore put(${storeName}) failed:`, e.message);
                     }
                 } else {
-                    console.log(`[OPENY] localStore put(${storeName}) — id:`, record.id, '(Supabase not configured)');
+                    console.log(`[OPENY] localStore put(${storeName}) — id:`, record.id, '(Firebase not configured)');
                 }
             },
             // Hard-delete a record by id
             async delete(id, storeName = 'history') {
                 localStore.delete(id, storeName);
-                if (_supabaseReady) {
+                if (_firebaseReady) {
                     try {
-                        const { error } = await _supabase
-                            .from(this._table(storeName))
-                            .delete()
-                            .eq('id', id);
-                        if (error) throw error;
+                        await _db.collection(this._collection(storeName)).doc(id).delete();
                     } catch (e) {
-                        console.error(`[OPENY] Supabase delete(${storeName}) failed:`, e.message);
+                        console.error(`[OPENY] Firestore delete(${storeName}) failed:`, e.message);
                     }
                 }
             },
             // Remove all records from a store
             async clear(storeName = 'history') {
                 localStore.clear(storeName);
-                if (_supabaseReady) {
+                if (_firebaseReady) {
                     try {
-                        const { error } = await _supabase
-                            .from(this._table(storeName))
-                            .delete()
-                            .not('id', 'is', null);
-                        if (error) throw error;
+                        const snapshot = await _db.collection(this._collection(storeName)).get();
+                        const docs = snapshot.docs;
+                        // Firestore batch limit is 500 operations — process in chunks
+                        for (let i = 0; i < docs.length; i += 500) {
+                            const batch = _db.batch();
+                            docs.slice(i, i + 500).forEach(doc => batch.delete(doc.ref));
+                            await batch.commit();
+                        }
                     } catch (e) {
-                        console.error(`[OPENY] Supabase clear(${storeName}) failed:`, e.message);
+                        console.error(`[OPENY] Firestore clear(${storeName}) failed:`, e.message);
                     }
                 }
             }
         };
 
-        // ── Supabase Realtime — sync UI across all devices without manual refresh ─
-        if (_supabaseReady) {
+        // ── Firestore Realtime — sync UI across all devices without manual refresh ─
+        if (_firebaseReady) {
             // Debounce helper to avoid redundant back-to-back refreshes
             function _debounce(fn, ms) {
                 let t;
@@ -876,45 +863,48 @@
             const _refreshAccounting = _debounce(() => { if (typeof window.refreshAccountingModule === 'function') window.refreshAccountingModule(); }, 150);
 
             const _realtimeMap = [
-                { table: 'invoices',         store: 'invoices',        refresh: () => { if (typeof window.renderInvHistoryList === 'function') window.renderInvHistoryList(); if (typeof window.updateAllocations === 'function') window.updateAllocations(); } },
-                { table: 'quotations',       store: 'quotations',      refresh: () => { if (typeof window.renderHistoryList === 'function') window.renderHistoryList(); } },
-                { table: 'client_contracts', store: 'clientContracts', refresh: () => { if (typeof window.renderCtHistoryList === 'function') window.renderCtHistoryList(); } },
-                { table: 'hr_contracts',     store: 'hrContracts',     refresh: () => { if (typeof window.renderEcHistoryList === 'function') window.renderEcHistoryList(); } },
-                { table: 'employees',        store: 'employees',       refresh: () => { if (typeof window.refreshEmployeesModule === 'function') window.refreshEmployeesModule(); } },
-                { table: 'acct_ledger',      store: 'acctLedger',      refresh: _refreshAccounting },
-                { table: 'acct_expenses',    store: 'acctExpenses',    refresh: _refreshAccounting },
+                { collection: 'invoices',         store: 'invoices',        refresh: () => { if (typeof window.renderInvHistoryList === 'function') window.renderInvHistoryList(); if (typeof window.updateAllocations === 'function') window.updateAllocations(); } },
+                { collection: 'quotations',       store: 'quotations',      refresh: () => { if (typeof window.renderHistoryList === 'function') window.renderHistoryList(); } },
+                { collection: 'client_contracts', store: 'clientContracts', refresh: () => { if (typeof window.renderCtHistoryList === 'function') window.renderCtHistoryList(); } },
+                { collection: 'hr_contracts',     store: 'hrContracts',     refresh: () => { if (typeof window.renderEcHistoryList === 'function') window.renderEcHistoryList(); } },
+                { collection: 'employees',        store: 'employees',       refresh: () => { if (typeof window.refreshEmployeesModule === 'function') window.refreshEmployeesModule(); } },
+                { collection: 'acct_ledger',      store: 'acctLedger',      refresh: _refreshAccounting },
+                { collection: 'acct_expenses',    store: 'acctExpenses',    refresh: _refreshAccounting },
             ];
-            _realtimeMap.forEach(({ table, store, refresh }) => {
-                _supabase.channel('openy-' + table)
-                    .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-                        // Invalidate local cache so the next getAll fetches fresh data from Supabase
-                        localStore.invalidate(store);
-                        refresh();
-                    })
-                    .subscribe();
+            _realtimeMap.forEach(({ collection, store, refresh }) => {
+                _db.collection(collection).onSnapshot(
+                    (snapshot) => {
+                        // Keep local cache in sync with the live Firestore data
+                        localStore._cache[store] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        // Skip refresh until the app is fully initialized to avoid
+                        // accessing DOM elements before DOMContentLoaded completes
+                        if (_appReady) refresh();
+                    },
+                    (err) => {
+                        console.warn(`[OPENY] Firestore onSnapshot(${collection}) error:`, err.message);
+                    }
+                );
             });
-            console.log('[OPENY] ✅ Realtime subscriptions active');
+            console.log('[OPENY] ✅ Firestore realtime listeners active');
         }
 
         async function uploadExportToStorage(blob, storeName, filename) {
-            if (!_supabaseReady) return null;
+            if (!_firebaseReady) return null;
             try {
                 const uid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36);
-                const path = `${storeName}/${Date.now()}-${uid}-${filename}`;
-                const { error } = await _supabase.storage
-                    .from('exports')
-                    .upload(path, blob, { contentType: blob.type || 'application/octet-stream' });
-                if (error) throw error;
-                const { data: pub } = _supabase.storage.from('exports').getPublicUrl(path);
-                console.log('[OPENY] File uploaded to Storage:', pub.publicUrl);
-                return pub.publicUrl;
+                const path = `exports/${storeName}/${Date.now()}-${uid}-${filename}`;
+                const ref = _storage.ref(path);
+                await ref.put(blob, { contentType: blob.type || 'application/octet-stream' });
+                const url = await ref.getDownloadURL();
+                console.log('[OPENY] File uploaded to Firebase Storage:', url);
+                return url;
             } catch (e) {
                 console.warn('[OPENY] uploadExportToStorage failed (non-critical):', e.message);
                 return null;
             }
         }
 
-        // Log an activity entry to Supabase (activity_logs table)
+        // Log an activity entry to Firestore (activity_logs collection)
         async function logActivity(action, moduleName, recordId, details) {
             try {
                 const entry = {
@@ -1015,6 +1005,9 @@
 
             // Initialize Contract Modules (separate try/catch to be resilient to other errors)
             try { if (typeof initContractModules === 'function') initContractModules(); } catch(e) { console.error("Contract module init error", e); }
+
+            // Signal Firestore realtime listeners that the app is ready to handle refreshes
+            _appReady = true;
         });
 
         // ==========================================================================
